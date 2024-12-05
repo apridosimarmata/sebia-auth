@@ -25,6 +25,56 @@ func NewAuthUsecase(repositories domain.Repositories) auth.AuthUsecase {
 	}
 }
 
+func (usecase *authUsecase) RefreshAccess(ctx context.Context) (res response.Response[auth.AuthenticationResponse]) {
+	claims, status := auth.ValidateToken(ctx.Value("refreshToken").(string))
+
+	if status == auth.ERROR_EXPIRED_TOKEN {
+		res.BadRequest("token is expired", nil)
+		return
+	}
+
+	userId := claims.Subject
+	user, err := usecase.userRepository.GetUserByEmail(ctx, userId)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	if user == nil {
+		res.NotFound("Pengguna tidak ditemukan", nil)
+		return
+	}
+
+	now, _ := utils.GetJktTime()
+	accessToken, _ := auth.GenerateJWT(*user, "ACCESS")
+	refreshToken, _ := auth.GenerateJWT(*user, "REFRESH")
+	res.SuccessWithCookie("success", auth.AuthenticationResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, []*http.Cookie{
+		{
+			Name:     "access_token",
+			Value:    accessToken,
+			Domain:   "tobacamping.id",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			Expires:  now.Add(time.Hour * 24 * 31),
+		},
+		{
+			Name:     "refresh_token",
+			Value:    refreshToken,
+			Domain:   "tobacamping.id",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			Expires:  now.Add(time.Hour * 24 * 31),
+		},
+	})
+
+	return
+}
+
 func (usecase *authUsecase) CheckIdentifier(ctx context.Context, req auth.CheckIndentifierDTO) (res response.Response[string]) {
 	user, err := usecase.userRepository.GetUserByIdentifier(ctx, req.Identifier)
 	if err != nil {
@@ -242,7 +292,7 @@ func (usecase *authUsecase) AuthenticateRegularUser(ctx context.Context, req aut
 		},
 		{
 			Name:     "refresh_token",
-			Value:    accessToken,
+			Value:    refreshToken,
 			Domain:   "tobacamping.id",
 			Path:     "/",
 			HttpOnly: true,
@@ -286,7 +336,7 @@ func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.G
 			},
 			{
 				Name:     "refresh_token",
-				Value:    accessToken,
+				Value:    refreshToken,
 				Domain:   "tobacamping.id",
 				Path:     "/",
 				HttpOnly: true,

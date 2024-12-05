@@ -5,6 +5,7 @@ import (
 	"mini-wallet/utils"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -54,7 +55,8 @@ type UserPasswordResetEntity struct {
 }
 
 type TemporaryUserEntity struct {
-	UID string `json:"uid"`
+	ID  primitive.ObjectID `bson:"_id,omitempty"` // Custom ObjectID field
+	UID string             `json:"uid"`
 
 	Name           string  `bson:"name"`
 	PhoneNumber    *string `bson:"phone_number"`
@@ -74,6 +76,7 @@ func (p *TemporaryUserEntity) ToUserEntity() (*UserEntity, error) {
 	}
 
 	return &UserEntity{
+		UID:            utils.GenerateUniqueId(),
 		Name:           p.Name,
 		Email:          p.Email,
 		PhoneNumber:    p.PhoneNumber,
@@ -105,6 +108,7 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (user *UserEntity, err error)
 	GetUserByPhoneNumber(ctx context.Context, phoneNumber string) (user *UserEntity, err error)
 	GetUserByIdentifier(ctx context.Context, identifier string) (user *UserEntity, err error)
+	GetUserByUserID(ctx context.Context, userID string) (user *UserEntity, err error)
 
 	InsertUserPasswordResetEntity(ctx context.Context, entity UserPasswordResetEntity) (err error)
 	DeleteUserPasswordResetEntity(ctx context.Context, email string) (err error)

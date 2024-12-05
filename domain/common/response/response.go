@@ -9,9 +9,11 @@ const (
 	STATUS_SUCCESS   = "success"
 	STATUS_NOT_FOUND = "not found"
 
-	STATUS_REDIRECT    = "redirect"
-	STATUS_ERROR       = "internal server error"
-	STATUS_BAD_REQUEST = "bad request"
+	STATUS_REDIRECT     = "redirect"
+	STATUS_ERROR        = "internal server error"
+	STATUS_BAD_REQUEST  = "bad request"
+	STATUS_FORBIDDEN    = "forbidden"
+	STATUS_UNAUTHORIZED = "unauthorized"
 
 	ERROR_WALLET_DISABLED       = "wallet disabled"
 	ERROR_WALLET_NOT_FOUND      = "wallet not found"
@@ -62,6 +64,16 @@ func (res *Response[T]) BadRequest(msg string, data *T) {
 	}
 }
 
+func (res *Response[T]) Forbidden(msg string, data *T) {
+	res.Status = STATUS_FORBIDDEN
+	res.StatusCode = http.StatusForbidden
+	res.Message = &msg
+
+	if data != nil {
+		res.Data = data
+	}
+}
+
 func (res *Response[T]) NotFound(msg string, data *T) {
 	res.Status = STATUS_NOT_FOUND
 	res.StatusCode = http.StatusNotFound
@@ -75,11 +87,13 @@ func (res *Response[T]) NotFound(msg string, data *T) {
 func (res *Response[T]) InternalServerError(msg string) {
 	res.Status = STATUS_ERROR
 	res.StatusCode = http.StatusInternalServerError
+	res.Message = &msg
 }
 
 func (res *Response[T]) Unauthorized(msg string) {
 	res.Status = ERROR_UNAUTHORIZED
 	res.StatusCode = http.StatusUnauthorized
+	res.Message = &msg
 }
 
 func (res *Response[T]) Redirect(msg string) {

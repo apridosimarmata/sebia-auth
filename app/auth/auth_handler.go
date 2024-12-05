@@ -22,7 +22,7 @@ type authHandler struct {
 	firebaseAdminClient *auth.Client
 }
 
-func SetAuthHandler(router *chi.Mux, usecases domain.Usecases) {
+func SetAuthHandler(router *chi.Mux, usecases domain.Usecases, middleware _auth.AuthMiddleware) {
 	app, err := firebaseAdmin.NewApp(context.Background(), nil)
 	if err != nil {
 		log.Fatalf("error initializing app: %v\n", err)
@@ -40,24 +40,45 @@ func SetAuthHandler(router *chi.Mux, usecases domain.Usecases) {
 		firebaseAdminClient: client,
 	}
 
+	router.Route("/auth/verify", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/", authHandler.VerifyAccessToken)
+	})
+
 	router.Route("/auth/", func(r chi.Router) {
+		// google handler
 		r.Post("/register/google", authHandler.RegisterWithGoogle)
 		r.Post("/login/google", authHandler.AuthenticateByGoogle)
+
+		// pre authenticated
 		r.Post("/check-identifier", authHandler.CheckIndentifier)
 		r.Post("/login", authHandler.AuthenticateRegularUser)
-		r.Post("/password-reset", authHandler.SendPasswordResetLink)
-		r.Post("/password-reset-submission", authHandler.SubmitPasswordReset)
-		r.Post("/verify-reset-password-token", authHandler.VerifyResetPasswordToken)
-
-		r.Post("/verify-email", authHandler.VerifyEmail)
-
 		r.Post("/register", authHandler.RegisterUser)
 
+		// authenticated
 		r.Get("/logout", authHandler.Logout)
-		r.Get("/", authHandler.VerifyAccessToken)
-		r.Get("/refresh", authHandler.Logout)
+
+		// verifications
+		r.Post("/verify-reset-password-token", authHandler.VerifyResetPasswordToken)
+		r.Post("/verify-email", authHandler.VerifyEmail)
+
+		// passwords
+		r.Post("/password-reset", authHandler.SendPasswordResetLink)
+		r.Post("/password-reset-submission", authHandler.SubmitPasswordReset)
 
 	})
+
+	router.Route("/auth/refresh", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/", authHandler.RefreshAccess)
+	})
+}
+
+func (handler *authHandler) RefreshAccess(w http.ResponseWriter, r *http.Request) {
+	res := handler.authUsecase.RefreshAccess(r.Context())
+
+	res.Writer = w
+	res.WriteResponse()
 }
 
 func (handler *authHandler) CheckIndentifier(w http.ResponseWriter, r *http.Request) {
@@ -255,27 +276,14 @@ func (handler *authHandler) VerifyAccessToken(w http.ResponseWriter, r *http.Req
 		Writer: w,
 	}
 
-	cookie, err := r.Cookie("access_token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			http.Error(w, "No cookie found", http.StatusUnauthorized)
-			return
-		}
-		http.Error(w, "Error retrieving cookie", http.StatusInternalServerError)
-		return
-	}
-
-	token := cookie.Value
-
-	_, errCode := _auth.ValidateToken(token)
-	switch errCode {
+	tokenStatus := r.Context().Value(_auth.TokenStatus{}).(int)
+	switch tokenStatus {
 	case 0:
 		res.Success(nil)
 	case _auth.ERROR_INVALID_TOKEN:
 		res.Unauthorized("InvalidToken")
 	case _auth.ERROR_EXPIRED_TOKEN:
 		res.Unauthorized("ExpiredToken")
-
 	}
 
 	res.WriteResponse()

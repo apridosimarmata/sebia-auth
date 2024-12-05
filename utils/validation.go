@@ -7,12 +7,18 @@ import (
 )
 
 // ValidatePhoneNumber checks if the provided phone number is valid.
-func ValidatePhoneNumber(phoneNumber string) error {
+func ValidatePhoneNumber(phoneNumber string) (newPhoneNumber *string, err error) {
 	phoneRegex := regexp.MustCompile(`^(62|08)\d{7,11}$`)
 	if phoneRegex.MatchString(phoneNumber) {
-		return nil
+		if phoneNumber[0] == '0' {
+			phoneNumber = "62" + phoneNumber[1:]
+
+		}
+
+		return &phoneNumber, nil
 	}
-	return fmt.Errorf("Diawali dengan 62 atau 08")
+
+	return nil, fmt.Errorf("Diawali dengan 62 atau 08")
 }
 
 // ValidateEmail checks if the provided email is valid.
@@ -37,6 +43,23 @@ func ValidateRequired(value string) error {
 	if strings.TrimSpace(value) != "" {
 		return nil
 	}
+	return fmt.Errorf("Empty value provided")
+}
+
+// ValidateRequired checks if the provided value is not empty.
+func ValidateRequiredSlice(value []interface{}) error {
+	if len(value) < 1 {
+		return nil
+	}
+	return fmt.Errorf("Empty value provided")
+}
+
+// ValidateRequired checks if the provided value is not empty.
+func ValidateRequiredInt(value int) error {
+	if value > 0 {
+		return nil
+	}
+
 	return fmt.Errorf("Empty value provided")
 }
 

@@ -21,6 +21,13 @@ type AuthUsecase interface {
 	VerifyResetPasswordToken(ctx context.Context, req VerifyResetPasswordTokenDTO) (res response.Response[string])
 	CheckIdentifier(ctx context.Context, req CheckIndentifierDTO) (res response.Response[string])
 	VerifyEmail(ctx context.Context, req VerifyEmailDTO) (res response.Response[string])
+	RefreshAccess(ctx context.Context) (res response.Response[AuthenticationResponse])
+}
+
+type UserIDContext struct {
+}
+
+type TokenStatus struct {
 }
 
 type AuthRepository interface {
@@ -70,10 +77,11 @@ func (p *UserRegistrationDTO) Validate() (err error) {
 		return err
 	}
 
-	err = utils.ValidatePhoneNumber(p.PhoneNumber)
+	newPhoneNumber, err := utils.ValidatePhoneNumber(p.PhoneNumber)
 	if err != nil {
 		return err
 	}
+	p.PhoneNumber = *newPhoneNumber
 
 	err = utils.ValidateFullName(p.Name)
 	if err != nil {

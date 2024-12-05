@@ -185,6 +185,19 @@ func (repository *userRepository) GetUserByEmail(ctx context.Context, email stri
 	return user, nil
 }
 
+func (repository *userRepository) GetUserByUserID(ctx context.Context, userID string) (user *user.UserEntity, err error) {
+	filter := bson.M{"uid": userID}
+
+	res := repository.userCollection.FindOne(ctx, filter)
+	if res.Err() != nil {
+		return nil, err
+	}
+
+	res.Decode(&user)
+
+	return user, nil
+}
+
 func (repository *userRepository) GetUserByPhoneNumber(ctx context.Context, phoneNumber string) (user *user.UserEntity, err error) {
 	filter := bson.M{"phone_number": phoneNumber}
 

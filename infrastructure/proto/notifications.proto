@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "notifications/";
+
+message WhatsAppMessage {
+    string content = 1;
+    string target = 2;
+}
+
+message Result {
+    bool error = 2;
+}
+
+message Empty{}
+
+service NotificationService{
+    rpc sendWhatsAppMessage(WhatsAppMessage) returns (Result) {}
+}
