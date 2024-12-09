@@ -25,17 +25,22 @@ func (repo *servicesSearchRepository) SearchServices(ctx context.Context, keywor
 		{"$search", bson.D{
 			{"index", "default"}, // Replace "default" with your Atlas Search index name
 			{"autocomplete", bson.D{
-				{"query", "sosor"}, // The search keyword
+				{"query", keyword}, // The search keyword
 				{"path", "title"},  // The field to search
+				{"fuzzy", bson.D{
+					{"maxEdits", 1},
+				},
+				},
 			}},
 		}},
 	}
 	// Project only the title and slug fields
 	projectStage := bson.D{
 		{"$project", bson.D{
-			{"title", 1}, // Include title
-			{"slug", 1},  // Include slug
-			{"_id", 0},   // Exclude the _id field
+			{"title", 1},         // Include title
+			{"slug", 1},          // Include slug
+			{"category_path", 1}, // Include slug
+			{"_id", 0},           // Exclude the _id field
 		}},
 	}
 

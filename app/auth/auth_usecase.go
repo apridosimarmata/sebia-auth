@@ -4,25 +4,181 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"log"
 	"mini-wallet/domain"
 	"mini-wallet/domain/auth"
 	"mini-wallet/domain/common/response"
+	"mini-wallet/domain/inquiry"
 	"mini-wallet/domain/user"
 	"mini-wallet/infrastructure"
+	"mini-wallet/integration"
 	"mini-wallet/utils"
 	"net/http"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type authUsecase struct {
-	userRepository user.UserRepository
+	userRepository      user.UserRepository
+	inquiryRepository   inquiry.InquiryRepository
+	notificationService integration.NotificationService
 }
 
-func NewAuthUsecase(repositories domain.Repositories) auth.AuthUsecase {
+func NewAuthUsecase(repositories domain.Repositories, integrations domain.Infrastructure) auth.AuthUsecase {
 	return &authUsecase{
-		userRepository: repositories.UserRepository,
+		userRepository:      repositories.UserRepository,
+		inquiryRepository:   repositories.InquiryRepository,
+		notificationService: integrations.NotificationService,
 	}
+}
+
+func (usecase *authUsecase) RegisterUserFromInquiry(ctx context.Context, req auth.AuthFromInquiryDTO) (res response.Response[string]) {
+	inquiryEntity, err := usecase.inquiryRepository.GetInquiryById(ctx, req.InquiryID)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	if inquiryEntity == nil {
+		res.NotFound("pesanan tidak ditemukan", nil)
+		return
+	}
+
+	userByEmail, err := usecase.userRepository.GetUserByEmail(ctx, inquiryEntity.Email)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	if userByEmail != nil {
+		res.BadRequest("email sudah digunakan", nil)
+		return
+	}
+
+	userByPhone, err := usecase.userRepository.GetUserByPhoneNumber(ctx, inquiryEntity.PhoneNumber)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	// temporary user
+	now, err := utils.GetJktTime()
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+	salt, err := utils.GenerateSalt(16)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	saltedPassword := req.Password + salt
+	hash, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	stringHashedPassword := string(hash)
+	stringSalt := string(salt)
+
+	VerificationToken, err := utils.GenerateRandomString(32)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	if userByPhone != nil {
+		res.BadRequest("nomor handphone sudah digunakan", nil)
+		return
+	}
+
+	temporaryUser := user.TemporaryUserEntity{
+		UID:               utils.GenerateUniqueId(),
+		Name:              inquiryEntity.FullName,
+		PhoneNumber:       &inquiryEntity.PhoneNumber,
+		Email:             inquiryEntity.Email,
+		HashedPassword:    &stringHashedPassword,
+		PasswordSalt:      &stringSalt,
+		VerificationToken: VerificationToken,
+		CreatedAt:         now.Format(time.RFC3339),
+		ExpiredAt:         int(now.Add(time.Minute * 15).Unix()),
+	}
+
+	// insert to temporary user, expiring in 15 min
+	err = usecase.userRepository.InsertTemporaryUser(ctx, temporaryUser)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	inquiryEntity.UserID = &temporaryUser.UID
+	err = usecase.inquiryRepository.UpdateInquiry(ctx, *inquiryEntity)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+	err = usecase.notificationService.SendWhatsAppMessage(ctx,
+		fmt.Sprintf("Halo %s,\nBerikut adalah link verifikasi akun Anda, %s", inquiryEntity.FullName, "https://sebia.id/verify-account?token="+VerificationToken+"&redirect=inquiry&inquiry_id="+inquiryEntity.ID), inquiryEntity.PhoneNumber)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	res.SuccessWithMessage("Link verifikasi dikirimkan ke WhatsApp Anda")
+	return
+}
+
+func (usecase *authUsecase) AuthenticateFromInquiry(ctx context.Context, req auth.AuthFromInquiryDTO) (res response.Response[auth.AuthenticationResponse]) {
+	inquiryEntity, err := usecase.inquiryRepository.GetInquiryById(ctx, req.InquiryID)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	if inquiryEntity == nil {
+		res.NotFound("pesanan tidak ditemukan", nil)
+		return
+	}
+
+	existingUser, err := usecase.userRepository.GetUserByUserID(ctx, *inquiryEntity.UserID)
+	if existingUser.VerifyPassword(req.Password) != nil {
+		res.BadRequest("Kata sandi salah", nil)
+		return
+	}
+
+	now, _ := utils.GetJktTime()
+
+	accessToken, _ := auth.GenerateJWT(*existingUser, "ACCESS")
+	refreshToken, _ := auth.GenerateJWT(*existingUser, "REFRESH")
+	res.SuccessWithCookie("success", auth.AuthenticationResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, []*http.Cookie{
+		{
+			Name:     "access_token",
+			Value:    accessToken,
+			Domain:   "sebia.id",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			Expires:  now.Add(time.Hour * 24 * 31),
+		},
+		{
+			Name:     "refresh_token",
+			Value:    refreshToken,
+			Domain:   "sebia.id",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			Expires:  now.Add(time.Hour * 24 * 31),
+		},
+	})
+
+	return
 }
 
 func (usecase *authUsecase) RefreshAccess(ctx context.Context) (res response.Response[auth.AuthenticationResponse]) {
@@ -55,7 +211,7 @@ func (usecase *authUsecase) RefreshAccess(ctx context.Context) (res response.Res
 		{
 			Name:     "access_token",
 			Value:    accessToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -64,7 +220,7 @@ func (usecase *authUsecase) RefreshAccess(ctx context.Context) (res response.Res
 		{
 			Name:     "refresh_token",
 			Value:    refreshToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -149,7 +305,7 @@ func (usecase *authUsecase) ResetUserPassword(ctx context.Context, req auth.Pass
 	return
 }
 
-func (usecase *authUsecase) VerifyEmail(ctx context.Context, req auth.VerifyEmailDTO) (res response.Response[string]) {
+func (usecase *authUsecase) VerifyPhoneNumber(ctx context.Context, req auth.VerifyEmailDTO) (res response.Response[auth.AuthenticationResponse]) {
 	now, err := utils.GetJktTime()
 	if err != nil {
 		res.InternalServerError(err.Error())
@@ -180,7 +336,32 @@ func (usecase *authUsecase) VerifyEmail(ctx context.Context, req auth.VerifyEmai
 		return
 	}
 
-	res.SuccessWithMessage("Verifikasi email berhasil")
+	accessToken, _ := auth.GenerateJWT(*userEntity, "ACCESS")
+	refreshToken, _ := auth.GenerateJWT(*userEntity, "REFRESH")
+	res.SuccessWithCookie("success", auth.AuthenticationResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, []*http.Cookie{
+		{
+			Name:     "access_token",
+			Value:    accessToken,
+			Domain:   "sebia.id",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			Expires:  now.Add(time.Hour * 24 * 31),
+		},
+		{
+			Name:     "refresh_token",
+			Value:    refreshToken,
+			Domain:   "sebia.id",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			Expires:  now.Add(time.Hour * 24 * 31),
+		},
+	})
+
 	return
 }
 
@@ -284,7 +465,7 @@ func (usecase *authUsecase) AuthenticateRegularUser(ctx context.Context, req aut
 		{
 			Name:     "access_token",
 			Value:    accessToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -293,7 +474,7 @@ func (usecase *authUsecase) AuthenticateRegularUser(ctx context.Context, req aut
 		{
 			Name:     "refresh_token",
 			Value:    refreshToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -305,7 +486,7 @@ func (usecase *authUsecase) AuthenticateRegularUser(ctx context.Context, req aut
 }
 
 func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.GoogleRegisterDTO) (res response.Response[auth.AuthenticationResponse]) {
-	userEntity, err := req.ToUserEntity()
+	_, err := req.ToUserEntity()
 	if err != nil {
 		res.InternalServerError(err.Error())
 		return
@@ -317,8 +498,8 @@ func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.G
 		return
 	}
 
-	accessToken, _ := auth.GenerateJWT(*userEntity, "ACCESS")
-	refreshToken, _ := auth.GenerateJWT(*userEntity, "REFRESH")
+	accessToken, _ := auth.GenerateJWT(*existingUser, "ACCESS")
+	refreshToken, _ := auth.GenerateJWT(*existingUser, "REFRESH")
 	now, _ := utils.GetJktTime()
 	if existingUser != nil {
 		res.SuccessWithCookie("success", auth.AuthenticationResponse{
@@ -328,7 +509,7 @@ func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.G
 			{
 				Name:     "access_token",
 				Value:    accessToken,
-				Domain:   "tobacamping.id",
+				Domain:   "sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
@@ -337,7 +518,7 @@ func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.G
 			{
 				Name:     "refresh_token",
 				Value:    refreshToken,
-				Domain:   "tobacamping.id",
+				Domain:   "sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
@@ -417,7 +598,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 			{
 				Name:     "access_token",
 				Value:    accessToken,
-				Domain:   "tobacamping.id",
+				Domain:   "sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
@@ -426,7 +607,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 			{
 				Name:     "refresh_token",
 				Value:    accessToken,
-				Domain:   "tobacamping.id",
+				Domain:   "sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
@@ -452,7 +633,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 		{
 			Name:     "access_token",
 			Value:    accessToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -461,7 +642,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 		{
 			Name:     "refresh_token",
 			Value:    accessToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,

@@ -10,9 +10,12 @@ import (
 	"mini-wallet/integration"
 	"mini-wallet/utils"
 	"strings"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type bookingUsecase struct {
+	baseRepository      domain.BaseRepository
 	inquiryRepository   inquiry.InquiryRepository
 	bookingRepository   booking.BookingRepository
 	serviceRepository   services.ServicesRepository
@@ -21,6 +24,7 @@ type bookingUsecase struct {
 
 func NewBookingUsecase(repositories domain.Repositories, integrations domain.Infrastructure) booking.BookingUsecase {
 	return &bookingUsecase{
+		baseRepository:      repositories.BaseRepository,
 		inquiryRepository:   repositories.InquiryRepository,
 		bookingRepository:   repositories.BookingRepository,
 		notificationService: integrations.NotificationService,
@@ -126,17 +130,53 @@ func (usecase *bookingUsecase) CreateBooking(ctx context.Context, inquiryID stri
 		bookingsDocument = append(bookingsDocument, document)
 	}
 
-	err = usecase.bookingRepository.UpsertBookingsDocument(ctx, bookingsDocument)
-
-	service, err := usecase.serviceRepository.GetServiceByID(ctx, inquiryEntity.ServiceID)
-	err = usecase.notificationService.
-		SendWhatsAppMessage(ctx, fmt.Sprintf("Hi %s, Berikut adalah kode konfirmasimu [%s] untuk pemesanan di %s! :D", inquiryEntity.FullName, strings.ToUpper(confirmationCode), service.Title), inquiryEntity.PhoneNumber)
-
-	inquiryEntity.Status = 3
-	err = usecase.inquiryRepository.UpdateInquiry(ctx, *inquiryEntity)
+	// update stage
+	tx, err := usecase.baseRepository.GetTransaction(ctx)
 	if err != nil {
 		return err
 	}
-	
+
+	defer usecase.CleanUpTransaction(ctx, *tx, err)
+
+	err = usecase.bookingRepository.UpsertBookingsDocument(ctx, tx, bookingsDocument)
+	if err != nil {
+		return err
+	}
+
+	confirmationCodeUppercase := strings.ToUpper(confirmationCode)
+	service, err := usecase.serviceRepository.GetServiceByID(ctx, inquiryEntity.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	inquiryEntity.Status = 3
+	inquiryEntity.ConfirmationCode = &confirmationCodeUppercase
+	err = usecase.inquiryRepository.UpdateInquiryWithTx(ctx, tx, *inquiryEntity)
+	if err != nil {
+		return err
+	}
+
+	// commit stage
+	err = usecase.baseRepository.CommitTransaction(ctx, *tx)
+	if err != nil {
+		return err
+	}
+
+	_ = usecase.notificationService.
+		SendWhatsAppMessage(ctx, fmt.Sprintf("Hi %s, Berikut adalah kode konfirmasimu [%s] untuk pemesanan di %s!", inquiryEntity.FullName, confirmationCodeUppercase, service.Title), inquiryEntity.PhoneNumber)
+
+	return nil
+}
+
+func (usecase *bookingUsecase) CleanUpTransaction(ctx context.Context, tx mongo.SessionContext, err error) error {
+	if err != nil {
+		err = usecase.baseRepository.AbortTransaction(ctx, tx)
+		if err != nil {
+			return err
+		}
+		return err
+
+	}
+
 	return nil
 }

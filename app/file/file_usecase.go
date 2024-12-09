@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/h2non/bimg"
 )
 
 type fileUsecase struct {
@@ -27,11 +28,32 @@ func NewFileUsecase(infra domain.Infrastructure) file.FileUsecase {
 	}
 }
 
+func optimizeImage(buffer []byte, quality int) (buf *bytes.Buffer, err error) {
+
+	converted, err := bimg.NewImage(buffer).Convert(bimg.WEBP)
+	if err != nil {
+		return nil, err
+	}
+
+	processed, err := bimg.NewImage(converted).Process(bimg.Options{Quality: quality})
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewBuffer(processed), nil
+}
+
 func (usecase *fileUsecase) UploadFile(ctx context.Context, file multipart.File, header *multipart.FileHeader, public bool) (res response.Response[string]) {
 	// Read the contents of the file into a buffer
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, file); err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading file:", err)
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	optimized, err := optimizeImage(buf.Bytes(), 20)
+	if err != nil {
 		res.InternalServerError(err.Error())
 		return
 	}
@@ -54,7 +76,7 @@ func (usecase *fileUsecase) UploadFile(ctx context.Context, file multipart.File,
 	_, err = usecase.s3Service.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(fileName),
-		Body:   bytes.NewReader(buf.Bytes()),
+		Body:   bytes.NewReader(optimized.Bytes()),
 	})
 	if err != nil {
 		fmt.Println(err.Error())

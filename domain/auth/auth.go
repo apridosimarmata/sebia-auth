@@ -20,8 +20,34 @@ type AuthUsecase interface {
 	ResetUserPassword(ctx context.Context, req PasswordResetSubmissionDTO) (res response.Response[string])
 	VerifyResetPasswordToken(ctx context.Context, req VerifyResetPasswordTokenDTO) (res response.Response[string])
 	CheckIdentifier(ctx context.Context, req CheckIndentifierDTO) (res response.Response[string])
-	VerifyEmail(ctx context.Context, req VerifyEmailDTO) (res response.Response[string])
+	VerifyPhoneNumber(ctx context.Context, req VerifyEmailDTO) (res response.Response[AuthenticationResponse])
 	RefreshAccess(ctx context.Context) (res response.Response[AuthenticationResponse])
+	RegisterUserFromInquiry(ctx context.Context, req AuthFromInquiryDTO) (res response.Response[string])
+	AuthenticateFromInquiry(ctx context.Context, req AuthFromInquiryDTO) (res response.Response[AuthenticationResponse])
+}
+
+type AuthFromInquiryDTO struct {
+	InquiryID string `json:"inquiry_id"`
+	Password  string `json:"password"`
+}
+
+func (p *AuthFromInquiryDTO) Validate() error {
+	err := utils.ValidateRequired(p.InquiryID)
+	if err != nil {
+		return err
+	}
+
+	err = utils.ValidateRequired(p.Password)
+	if err != nil {
+		return err
+	}
+
+	err = utils.ValidatePassword(p.Password)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type UserIDContext struct {
@@ -223,6 +249,7 @@ func (p *GoogleRegisterDTO) ToUserEntity() (res *user.UserEntity, err error) {
 
 	nowString := now.Format(time.RFC3339)
 	return &user.UserEntity{
+		UID:             utils.GenerateUniqueId(),
 		Name:            p.Name,
 		Email:           p.Email,
 		EmailVerifiedAt: nowString,

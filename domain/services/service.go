@@ -7,7 +7,7 @@ import (
 	"mini-wallet/utils"
 )
 
-var categoryPathMap = map[int]string{
+var typePathMap = map[int]string{
 	1: "activities",
 	2: "events",
 	3: "rentals",
@@ -15,10 +15,11 @@ var categoryPathMap = map[int]string{
 }
 
 var categoryStringMap = map[int]string{
-	1: "Aktivitas Wisata",
-	2: "Event",
-	3: "Rental",
-	4: "Open trip",
+	1: "Camping",
+	2: "Olahraga",
+	3: "Musik",
+	4: "Seni",
+	5: "Kegiatan di Alam",
 }
 
 var measurementStringMap = map[int]string{
@@ -26,6 +27,7 @@ var measurementStringMap = map[int]string{
 	2: "menit",
 	3: "jam",
 	4: "hari",
+	5: "malam",
 }
 
 // export this so can be used outside this package
@@ -61,6 +63,13 @@ type ServiceEntity struct {
 	UpdatedAt  int64  `bson:"updated_at"`
 
 	EventDetails *EventDetails `json:"event_details,omitempty" bson:"event_details"`
+
+	OpenForAffiliate     int  `json:"open_for_affiliate" bson:"open_for_affiliate"`
+	OpenForAffiliateBool bool `json:"open_for_affiliate_bool" bson:"open_for_affiliate_bool"`
+	AffiliateComission   int  `json:"affiliate_comission" bson:"affiliate_comission"`
+
+	AverageScore float32 `json:"-" bson:"average_score"` // never allow this value modified by client
+	ReviewCount  int     `json:"-" bson:"review_count"`
 }
 
 type ServiceVariant struct {
@@ -88,6 +97,12 @@ type ServiceDTO struct {
 	TypeString        string `json:"type_string" bson:"type_string"`
 	CategoryString    string `json:"category_string" bson:"category_string"`
 	MeasurementString string `json:"measurement_string" bson:"measurement_string"`
+
+	//
+	OpenForAffiliate   int     `json:"open_for_affiliate" bson:"open_for_affiliate"`
+	AffiliateComission int     `json:"affiliate_comission" bson:"affiliate_comission"`
+	AverageScore       float32 `json:"average_score" bson:"average_score"` // never allow this value modified by client
+	ReviewCount        int     `json:"review_count" bson:"review_count"`
 }
 
 type EventDetails struct {
@@ -143,6 +158,20 @@ func (p *ServiceDTO) Validate() error {
 		return err
 	}
 
+	err = utils.ValidateRequiredInt(p.OpenForAffiliate)
+	if err != nil {
+		return err
+	}
+
+	err = utils.ValidateRequiredIntAllowsZero(p.AffiliateComission)
+	if err != nil {
+		return err
+	}
+
+	if p.OpenForAffiliate == 1 && (p.AffiliateComission < 5 || p.AffiliateComission > 10) {
+		return errors.New("komisi minimal 5 persen dan maksimal 10 persen")
+	}
+
 	if len(p.Photos) < 1 {
 		return errors.New("tambahkan minimal 1 foto")
 	}
@@ -172,6 +201,16 @@ func (p *ServiceDTO) ToServiceEntity(serviceId *string) ServiceEntity {
 		serviceId = &newId
 	}
 
+	openForAffiliateBool := true
+	if p.OpenForAffiliate == 2 {
+		openForAffiliateBool = false
+	}
+
+	comission := 0
+	if openForAffiliateBool {
+		comission = p.AffiliateComission
+	}
+
 	return ServiceEntity{
 		ID:                *serviceId,
 		Title:             p.Title,
@@ -186,12 +225,15 @@ func (p *ServiceDTO) ToServiceEntity(serviceId *string) ServiceEntity {
 		BusinessID:        p.BusinessID,
 		CreatedAt:         now.Unix(),
 		UpdatedAt:         now.Unix(),
-		CategoryPath:      categoryPathMap[p.CategoryID],
+		CategoryPath:      typePathMap[p.CategoryID],
 		EventDetails:      eventDetails,
 		IsEvent:           eventDetails != nil,
 		// strings
-		MeasurementString: measurementStringMap[p.MeasurementUnitID],
-		CategoryString:    categoryStringMap[p.CategoryID],
+		MeasurementString:    measurementStringMap[p.MeasurementUnitID],
+		CategoryString:       categoryStringMap[p.CategoryID],
+		OpenForAffiliate:     p.OpenForAffiliate,
+		OpenForAffiliateBool: openForAffiliateBool,
+		AffiliateComission:   comission,
 	}
 }
 
@@ -199,6 +241,8 @@ type ServicesRepository interface {
 	InsertService(ctx context.Context, entity ServiceEntity) (err error)
 	UpdateService(ctx context.Context, entity ServiceEntity) (err error)
 	GetPublicServices(ctx context.Context, req GetPublicServicesRequest) ([]MiniServiceDTO, error)
+	GetBusinessPublicServices(ctx context.Context, req GetPublicServicesRequest) ([]MiniServiceDTO, error)
+
 	GetServices(ctx context.Context, req GetServicesRequest) ([]MiniServiceDTO, error)
 	GetServiceBySlug(ctx context.Context, slug string) (res *ServiceDTO, err error)
 	GetServiceByID(ctx context.Context, id string) (res *ServiceDTO, err error)
@@ -211,22 +255,24 @@ type ServicesSearchRepository interface {
 type ServicesUsecase interface {
 	CreateService(ctx context.Context, req ServiceDTO, userID string) (res response.Response[string])
 	UpdateService(ctx context.Context, req ServiceDTO, userID string) (res response.Response[string])
-
 	GetServices(ctx context.Context, req GetServicesRequest) (res response.Response[[]MiniServiceDTO])
 	GetServiceBySlug(ctx context.Context, slug string) (res response.Response[*ServiceDTO])
 	GetPublicServices(ctx context.Context, req GetPublicServicesRequest) (res response.Response[[]MiniServiceDTO])
+	GetBusinessPublicServices(ctx context.Context, req GetPublicServicesRequest) (res response.Response[[]MiniServiceDTO])
 	SearchServicesByKeyword(ctx context.Context, keyword string) (res response.Response[[]ServiceSearchResultDTO])
 }
 
 type ServiceSearchResultDTO struct {
-	Title string `bson:"title"`
-	Slug  string `bson:"slug"`
+	Title        string `bson:"title" json:"title"`
+	Slug         string `bson:"slug" json:"slug"`
+	CategoryPath string `bson:"category_path" json:"category_path"`
 }
 
 type GetPublicServicesRequest struct {
-	Page       int `json:"page"`
-	Size       int `json:"size"`
-	CategoryID int `json:"categoryId"`
+	Page       int    `json:"page"`
+	Size       int    `json:"size"`
+	CategoryID int    `json:"categoryId"`
+	BusinessID string `json:"businessId"`
 }
 
 func (p *GetPublicServicesRequest) Validate() error {
@@ -240,10 +286,10 @@ func (p *GetPublicServicesRequest) Validate() error {
 		return err
 	}
 
-	err = utils.ValidateRequiredInt(p.CategoryID)
-	if err != nil {
-		return err
-	}
+	// err = utils.ValidateRequiredInt(p.CategoryID)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -287,6 +333,7 @@ func (p *GetPublicServicesRequest) ToMapInterface() map[string]interface{} {
 	result["page"] = p.Page
 	result["size"] = p.Size
 	result["category_id"] = p.CategoryID
+	result["business_id"] = p.BusinessID
 
 	return result
 }

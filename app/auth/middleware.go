@@ -22,32 +22,6 @@ func NewAuthMiddleware(repositories domain.Repositories) _auth.AuthMiddleware {
 	}
 }
 
-func (middleware *authMiddleware) PublicMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// processing access token
-		tokenStatus, userId := middleware.processAccessToken(&w, r)
-		if tokenStatus == _auth.ERROR_INVALID_TOKEN {
-			// http.Error(w, "invalid access", http.StatusUnauthorized)
-			// return
-		}
-
-		// refresh access
-		if tokenStatus == _auth.ERROR_EXPIRED_TOKEN {
-			err := middleware.refreshAccess(r.Context(), *userId, &w)
-			if err != nil {
-				// http.Error(w, err.Error(), http.StatusInternalServerError)
-				// return
-			}
-			tokenStatus = 0
-		}
-
-		ctx := context.WithValue(r.Context(), _auth.UserIDContext{}, userId)
-		ctx = context.WithValue(ctx, _auth.TokenStatus{}, tokenStatus)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
 func (middleware *authMiddleware) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// processing access token
@@ -117,7 +91,7 @@ func (middleware *authMiddleware) refreshAccess(ctx context.Context, userId stri
 		{
 			Name:     "access_token",
 			Value:    accessToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -126,7 +100,7 @@ func (middleware *authMiddleware) refreshAccess(ctx context.Context, userId stri
 		{
 			Name:     "refresh_token",
 			Value:    refreshToken,
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,

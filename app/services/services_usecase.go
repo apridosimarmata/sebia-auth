@@ -23,6 +23,17 @@ func NewServicesUsecase(repositories domain.Repositories) services.ServicesUseca
 	}
 }
 
+func (usecase *servicesUsecase) GetBusinessPublicServices(ctx context.Context, req services.GetPublicServicesRequest) (res response.Response[[]services.MiniServiceDTO]) {
+	result, err := usecase.servicesRepository.GetBusinessPublicServices(ctx, req)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	res.Success(result)
+	return
+}
+
 func (usecase *servicesUsecase) SearchServicesByKeyword(ctx context.Context, keyword string) (res response.Response[[]services.ServiceSearchResultDTO]) {
 	result, err := usecase.servicesSearchRepository.SearchServices(ctx, keyword)
 	if err != nil {
@@ -59,7 +70,7 @@ func (usecase *servicesUsecase) UpdateService(ctx context.Context, req services.
 		return
 	}
 
-	res.Success("service updated")
+	res.Success(updatedServiceEntity.Slug)
 	return
 }
 
@@ -126,6 +137,6 @@ func (usecase *servicesUsecase) CreateService(ctx context.Context, req services.
 		return
 	}
 
-	res.Success("service created")
+	res.Success(serviceEntity.Slug)
 	return
 }

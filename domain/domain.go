@@ -9,6 +9,7 @@ import (
 	"mini-wallet/domain/inquiry"
 	"mini-wallet/domain/locations"
 	"mini-wallet/domain/payment"
+	"mini-wallet/domain/review"
 	"mini-wallet/domain/services"
 	"mini-wallet/domain/user"
 	"mini-wallet/infrastructure"
@@ -19,6 +20,7 @@ import (
 )
 
 type Repositories struct {
+	BaseRepository           BaseRepository
 	UserRepository           user.UserRepository
 	LocationRepository       locations.LocationRepository
 	BusinessRepository       business.BusinessRepository
@@ -28,6 +30,7 @@ type Repositories struct {
 
 	InquiryRepository inquiry.InquiryRepository
 	BookingRepository booking.BookingRepository
+	ReviewRepository  review.ReviewRepository
 }
 
 type Usecases struct {
@@ -40,6 +43,7 @@ type Usecases struct {
 	InquiryUsecase   inquiry.InquiryUsecase
 	PaymentUsecase   payment.PaymentUsecase
 	BookingUsecase   booking.BookingUsecase
+	ReviewUsecase    review.ReviewUsecase
 }
 
 type Infrastructure struct {

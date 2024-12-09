@@ -19,6 +19,17 @@ func NewInquiryRepository(repositoryParam domain.RepositoryParam) inquiry.Inquir
 	}
 }
 
+func (repo *inquiryRepository) UpdateInquiryWithTx(ctx context.Context, txSession *mongo.SessionContext, req inquiry.InquiryEntity) (err error) {
+	filter := bson.M{"id": req.ID}
+
+	result := repo.inquiryCollection.FindOneAndReplace(*txSession, filter, req)
+	if result.Err() != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (repo *inquiryRepository) InsertInquiry(ctx context.Context, req inquiry.InquiryEntity) (err error) {
 	_, err = repo.inquiryCollection.InsertOne(ctx, req)
 	if err != nil {

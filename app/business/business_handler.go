@@ -26,6 +26,44 @@ func SetBusinessHandler(router *chi.Mux, usecases domain.Usecases, middleware _a
 		r.Get("/status", businessHandler.GetUserBusinessStatus)
 	})
 
+	router.Route("/public/businesses", func(r chi.Router) {
+		r.Get("/{handle}", businessHandler.GetBusinessByHandle)
+		r.Get("/id/{id}", businessHandler.GetBusinessById)
+
+	})
+
+}
+
+func (handler *businessHandler) GetBusinessById(w http.ResponseWriter, r *http.Request) {
+	resp := &response.Response[string]{
+		Writer: w,
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		resp.BadRequest("invalid business id", nil)
+		return
+	}
+
+	res := handler.businessUsecase.GetBusinessByID(r.Context(), id)
+	res.Writer = w
+	res.WriteResponse()
+}
+
+func (handler *businessHandler) GetBusinessByHandle(w http.ResponseWriter, r *http.Request) {
+	resp := &response.Response[string]{
+		Writer: w,
+	}
+
+	handle := chi.URLParam(r, "handle")
+	if handle == "" {
+		resp.BadRequest("invalid business handle", nil)
+		return
+	}
+
+	res := handler.businessUsecase.GetBusinessByHandle(r.Context(), handle)
+	res.Writer = w
+	res.WriteResponse()
 }
 
 func (handler *businessHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {

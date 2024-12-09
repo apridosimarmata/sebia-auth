@@ -40,8 +40,7 @@ func (repo *bookingRepository) GetBookings(ctx context.Context, serviceId string
 }
 
 // CreateServiceBookingDocument(ctx context.Context, serviceID string, yearMonth string) (err error)
-func (repo *bookingRepository) UpsertBookingsDocument(ctx context.Context, documents []booking.ServiceBookings) (err error) {
-
+func (repo *bookingRepository) UpsertBookingsDocument(ctx context.Context, tx *mongo.SessionContext, documents []booking.ServiceBookings) (err error) {
 	for _, document := range documents {
 		filter := bson.M{"id": document.ID}
 		update := bson.M{"$set": bson.M{
@@ -52,7 +51,7 @@ func (repo *bookingRepository) UpsertBookingsDocument(ctx context.Context, docum
 		}}
 
 		opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
-		result := repo.bookingCollection.FindOneAndUpdate(ctx, filter, update, opts)
+		result := repo.bookingCollection.FindOneAndUpdate(*tx, filter, update, opts)
 
 		if result.Err() != nil {
 			return err

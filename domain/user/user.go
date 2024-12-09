@@ -10,7 +10,7 @@ import (
 )
 
 type UserEntity struct {
-	UID string `json:"uid"`
+	UID string `bson:"uid"`
 
 	Name           string  `bson:"name"`
 	PhoneNumber    *string `bson:"phone_number"`
@@ -76,7 +76,7 @@ func (p *TemporaryUserEntity) ToUserEntity() (*UserEntity, error) {
 	}
 
 	return &UserEntity{
-		UID:            utils.GenerateUniqueId(),
+		UID:            p.UID,
 		Name:           p.Name,
 		Email:          p.Email,
 		PhoneNumber:    p.PhoneNumber,

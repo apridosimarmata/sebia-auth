@@ -34,9 +34,32 @@ func SetServicesHandler(router *chi.Mux, usecases domain.Usecases, middleware _a
 	})
 	router.Route("/public/services", func(r chi.Router) {
 		r.Get("/", servicesHandler.GetPublicServices)
+		r.Get("/host", servicesHandler.GetBusinessPublicServices)
 		r.Get("/{slug}", servicesHandler.GetServiceBySlug)
 		r.Get("/search", servicesHandler.SearchServicesByKeyword)
 	})
+}
+
+func (handler *servicesHandler) GetBusinessPublicServices(w http.ResponseWriter, r *http.Request) {
+	resp := &response.Response[string]{
+		Writer: w,
+	}
+
+	var params services.GetPublicServicesRequest
+	if err := handler.decoder.Decode(&params, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err := params.Validate()
+	if err != nil {
+		resp.BadRequest(err.Error(), nil)
+		return
+	}
+
+	res := handler.servicesUsecase.GetBusinessPublicServices(r.Context(), params)
+	res.Writer = w
+	res.WriteResponse()
 }
 
 func (handler *servicesHandler) SearchServicesByKeyword(w http.ResponseWriter, r *http.Request) {

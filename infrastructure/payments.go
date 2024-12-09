@@ -38,8 +38,7 @@ func (payment *paymentImplementation) CreatePaymentLink(ctx context.Context, inq
 	req := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  inquiry.ID,
-			GrossAmt: 1,
-			// GrossAmt: int64(inquiry.TotalPayment),
+			GrossAmt: int64(inquiry.TotalPayment),
 		},
 		CreditCard: &snap.CreditCardDetails{
 			Secure: true,

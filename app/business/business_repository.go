@@ -20,6 +20,19 @@ func NewBusinessRepository(repositoryParam domain.RepositoryParam) business.Busi
 	}
 }
 
+func (repository *businessRepository) GetBusinessByHandle(ctx context.Context, handle string) (res *business.BusinessEntity, err error) {
+	filter := bson.M{"handle": handle}
+
+	result := repository.businessCollection.FindOne(ctx, filter)
+	if result.Err() != nil {
+		return nil, err
+	}
+
+	result.Decode(&res)
+
+	return res, nil
+}
+
 func (repository *businessRepository) InsertBusiness(ctx context.Context, entity business.BusinessEntity) (err error) {
 	_, err = repository.businessCollection.InsertOne(ctx, entity)
 	if err != nil {

@@ -40,6 +40,9 @@ func (handler *fileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	public := r.URL.Query().Get("public")
+	if public != "true" {
+		public = "false"
+	}
 	publicBool, err := strconv.ParseBool(public)
 	if err != nil {
 		resp.BadRequest(fmt.Sprintf("invalid public param : %v", &public), nil)

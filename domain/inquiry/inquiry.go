@@ -9,12 +9,20 @@ import (
 	"mini-wallet/utils"
 	"regexp"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var inquiryStatusMap = map[int]string{
 	0: "Menunggu Pembayaran",
 	2: "Sudah Dibayar",
 	3: "Kode Booking Terbit",
+}
+
+type MaskedInquiryContactDTO struct {
+	Name        string  `json:"name"`
+	Email       string  `json:"email"`
+	PhoneNumber *string `json:"phone_number"`
 }
 
 type InquiryDTO struct {
@@ -27,11 +35,12 @@ type InquiryDTO struct {
 
 	SelectedHour string `json:"selected_hour,omitempty"`
 
-	FullName    string `json:"full_name,omitempty"`
-	PhoneNumber string `json:"phone_number,omitempty"`
-	Email       string `json:"email,omitempty"`
+	FullName         string  `json:"full_name,omitempty"`
+	PhoneNumber      string  `json:"phone_number,omitempty"`
+	Email            string  `json:"email,omitempty"`
+	ConfirmationCode *string `json:"confirmation_code,omitempty"`
 
-	UserID *string `json:"-"`
+	UserID *string `json:"user_id"`
 	Status int     `json:"status"`
 
 	// for response details in booking page
@@ -40,6 +49,10 @@ type InquiryDTO struct {
 	CreatedAt                string                `json:"created_at"`
 	ServiceMeasurementUnitID int                   `json:"service_measurement_unit_id"`
 	ServiceMeasurementUnit   string                `json:"service_measurement_unit"`
+	ReviewAvailable          bool                  `json:"review_available"`
+	ReviewMade               bool                  `json:"review_made"`
+
+	// If status == 3
 }
 type InquiryServiceDetails struct {
 	Photo    string `json:"photo"`
@@ -71,10 +84,27 @@ type InquiryEntity struct {
 	TotalPayment             int    `bson:"total_payment"`
 	ServiceMeasurementUnitID int    `bson:"service_measurement_unit_id"`
 	ServiceMeasurementUnit   string `bson:"service_measurement_unit"`
+
+	ReviewMade       bool    `bson:"review_made"`
+	ConfirmationCode *string `bson:"confirmation_code"`
 }
 
 func (p *InquiryEntity) ToInquiryDetailsResponse(service services.ServiceEntity, host business.BusinessEntity) InquiryDTO {
 	statusString := inquiryStatusMap[p.Status]
+
+	reviewAvailable := false
+	lastSelectedDate := p.SelectedDates[len(p.SelectedDates)-1]
+	now, _ := utils.GetJktTime()
+	// Define the layout that matches the input string
+	layout := "2006/1/2"
+
+	// Parse the string into a time.Time object
+	parsedLastSelectedDate, _ := time.Parse(layout, lastSelectedDate)
+	parsedLastSelectedDate = parsedLastSelectedDate.Add(time.Hour * 24)
+
+	if p.Status == 3 && now.After(parsedLastSelectedDate) && !p.ReviewMade {
+		reviewAvailable = true
+	}
 
 	return InquiryDTO{
 		ID:              &p.ID,
@@ -99,6 +129,10 @@ func (p *InquiryEntity) ToInquiryDetailsResponse(service services.ServiceEntity,
 		ServiceMeasurementUnit:   p.ServiceMeasurementUnit,
 		SelectedHour:             p.SelectedHour,
 		ServiceMeasurementUnitID: p.ServiceMeasurementUnitID,
+		UserID:                   p.UserID,
+		ReviewAvailable:          reviewAvailable,
+		ReviewMade:               p.ReviewMade,
+		ConfirmationCode:         p.ConfirmationCode,
 	}
 }
 
@@ -167,10 +201,13 @@ func (p *InquiryDTO) ToInquiryEntity(service services.ServiceEntity, selectedVar
 type InquiryUsecase interface {
 	CreateInquiry(ctx context.Context, req InquiryDTO) (res response.Response[string])
 	GetInquiry(ctx context.Context, id string) (res response.Response[InquiryDTO])
+	GetInquiryMaskedContact(ctx context.Context, id string) (res response.Response[MaskedInquiryContactDTO])
 }
 
 type InquiryRepository interface {
 	InsertInquiry(ctx context.Context, req InquiryEntity) (err error)
 	UpdateInquiry(ctx context.Context, req InquiryEntity) (err error)
+	UpdateInquiryWithTx(ctx context.Context, txSession *mongo.SessionContext, req InquiryEntity) (err error)
+
 	GetInquiryById(ctx context.Context, id string) (res *InquiryEntity, err error)
 }

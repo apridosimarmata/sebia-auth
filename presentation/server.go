@@ -9,6 +9,8 @@ import (
 	"mini-wallet/app/business"
 	"mini-wallet/app/file"
 	"mini-wallet/app/inquiry"
+	"mini-wallet/app/review"
+
 	"mini-wallet/app/location"
 	"mini-wallet/app/payment"
 	"mini-wallet/app/services"
@@ -52,6 +54,7 @@ func InitServer() chi.Router {
 	// return router
 
 	repositories := domain.Repositories{
+		BaseRepository:           domain.NewBaseRepository(*mongoDb.Client()),
 		UserRepository:           user.NewUserRepository(repositoryParam),
 		LocationRepository:       location.NewLocationRepository(repositoryParam),
 		BusinessRepository:       business.NewBusinessRepository(repositoryParam),
@@ -60,6 +63,7 @@ func InitServer() chi.Router {
 		InquiryRepository:        inquiry.NewInquiryRepository(repositoryParam),
 		BookingRepository:        booking.NewBookingRepository(repositoryParam),
 		ServicesSearchRepository: services.NewServicesSearchRepository(repositoryParam),
+		ReviewRepository:         review.NewReviewRepository(repositoryParam),
 	}
 
 	s3, err := infrastructure.NewS3Service()
@@ -78,7 +82,7 @@ func InitServer() chi.Router {
 	}
 
 	usecases := domain.Usecases{
-		AuthUsecase:      auth.NewAuthUsecase(repositories),
+		AuthUsecase:      auth.NewAuthUsecase(repositories, infra),
 		FileUsecase:      file.NewFileUsecase(infra),
 		LocationUsecase:  location.NewLocationUsecase(repositories),
 		BusinessUsecase:  business.NewBusinessUsecase(repositories),
@@ -87,6 +91,7 @@ func InitServer() chi.Router {
 		InquiryUsecase:   inquiry.NewInquiryUsecase(repositories, infra),
 		PaymentUsecase:   payment.NewPaymentUsecase(repositories, infra),
 		BookingUsecase:   booking.NewBookingUsecase(repositories, infra),
+		ReviewUsecase:    review.NewReviewUsecase(repositories),
 	}
 
 	middlewares := auth.NewAuthMiddleware(repositories)
@@ -110,6 +115,7 @@ func InitServer() chi.Router {
 	services.SetServicesHandler(router, usecases, middlewares)
 	inquiry.SetInquiryHandler(router, usecases, middlewares)
 	payment.SetPaymentHandler(router, usecases)
+	review.SetReviewHandler(router, usecases, middlewares)
 
 	fmt.Println("server listening on port 3000")
 

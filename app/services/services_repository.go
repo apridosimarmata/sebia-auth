@@ -21,6 +21,72 @@ func NewServicesRepository(repositoryParam domain.RepositoryParam) services.Serv
 	}
 }
 
+func (repository *servicesRepository) GetBusinessPublicServices(ctx context.Context, req services.GetPublicServicesRequest) ([]services.MiniServiceDTO, error) {
+	options := options.Find().SetProjection(
+		bson.D{
+			{
+				Key:   "measurement_unit",
+				Value: 1,
+			},
+			{
+				Key:   "type_id",
+				Value: 1,
+			},
+			{
+				Key:   "category_id",
+				Value: 1,
+			},
+			{
+				Key:   "measurement_string",
+				Value: 1,
+			},
+			{
+				Key:   "category_string",
+				Value: 1,
+			},
+			{
+				Key:   "category_path",
+				Value: 1,
+			},
+			{
+				Key:   "description",
+				Value: 1,
+			},
+			{
+				Key:   "photos",
+				Value: 1,
+			},
+			{"title", 1},
+			{"slug", 1},
+			{"more_than_one_variant", bson.D{
+				{"$gt", bson.A{
+					bson.D{{"$size", "$variants"}}, // Get the size of the variants array
+					1,                              // Compare if greater than 1
+				}},
+			}},
+			{"is_event", 1},
+			{"first_variant", bson.D{
+				{"$arrayElemAt", bson.A{"$variants", 0}}, // Get the first element of the variants array
+			}},
+		},
+	).SetSort(bson.D{{"name", 1}})
+
+	filter := &bson.M{
+		"business_id": req.ToMapInterface()["business_id"],
+	}
+
+	res, err := repository.servicesCollection.Find(ctx, filter, options)
+	if res.Err() != nil {
+		return nil, err
+	}
+
+	result := []services.MiniServiceDTO{}
+
+	res.All(ctx, &result)
+
+	return result, nil
+}
+
 func (repository *servicesRepository) GetPublicServices(ctx context.Context, req services.GetPublicServicesRequest) ([]services.MiniServiceDTO, error) {
 	options := options.Find().SetProjection(
 		bson.D{

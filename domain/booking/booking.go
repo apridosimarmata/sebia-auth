@@ -3,6 +3,8 @@ package booking
 import (
 	"context"
 	"mini-wallet/utils"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // duration type -> key
@@ -37,7 +39,7 @@ type BookingUsecase interface {
 
 type BookingRepository interface {
 	GetBookings(ctx context.Context, serviceId string, variantPax int, yearMonths []string) (res []ServiceBookings, err error)
-	UpsertBookingsDocument(ctx context.Context, documents []ServiceBookings) (err error)
+	UpsertBookingsDocument(ctx context.Context, tx *mongo.SessionContext, documents []ServiceBookings) (err error)
 }
 
 func (p *ServiceBookings) Init(serviceId string, variantPax int, yearMonth string) {

@@ -14,6 +14,7 @@ import (
 type BusinessEntity struct {
 	ID                 string `bson:"id"`
 	Name               string `bson:"name"`
+	Handle             string `bson:"handle"`
 	PhoneNumber        string `bson:"phone_number"`
 	Address            string `bson:"address"`
 	RequirementFileUrl string `bson:"requirement_file_url"`
@@ -36,11 +37,14 @@ func (p *BusinessCreationDTO) ToBusinessEntity() BusinessEntity {
 	t := time.Now().UTC()
 	id := ulid.MustNew(ulid.Timestamp(t), entropy)
 
+	handle := utils.GenerateSlug(p.Name)
+
 	// Print the generated ULID
 	// fmt.Printf("Generated ULID: %s\n", id)
 	return BusinessEntity{
 		ID:                 id.String(),
 		Name:               p.Name,
+		Handle:             handle,
 		PhoneNumber:        p.PhoneNumber,
 		Address:            p.Address,
 		RequirementFileUrl: p.RequirementFileUrl,
@@ -117,13 +121,44 @@ type BusinessDTO struct {
 	// UserID derived from access_token
 }
 
+type PublicBusinessDTO struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Handle string `json:"handle"`
+	// PhoneNumber string `json:"phone_number"`
+	// Address     string `json:"address"`
+	// CityID     int64 `json:"city_id"`
+	// ProvinceID int64 `json:"province_id"`
+	// DistrictID int64 `json:"district_id"`
+
+	City     string `json:"city"`
+	Province string `json:"province"`
+	// District string `json:"district"`
+
+	// UserID derived from access_token
+}
+
+func (p *BusinessEntity) ToPublicBusinessDTO(province string, city string) PublicBusinessDTO {
+	return PublicBusinessDTO{
+		ID:       p.ID,
+		Name:     p.Name,
+		Handle:   p.Handle,
+		Province: province,
+		City:     city,
+		// District: district,
+	}
+}
+
 type BusinessUsecase interface {
 	CreateBusiness(ctx context.Context, business BusinessCreationDTO) (res response.Response[string])
 	GetUserBusinessStatus(ctx context.Context, userID string) (res response.Response[*string])
+	GetBusinessByHandle(ctx context.Context, slug string) (res response.Response[*PublicBusinessDTO])
+	GetBusinessByID(ctx context.Context, id string) (res response.Response[*PublicBusinessDTO])
 }
 
 type BusinessRepository interface {
 	InsertBusiness(ctx context.Context, entity BusinessEntity) (err error)
 	GetBusinessByUserId(ctx context.Context, userID string) (res *BusinessEntity, err error)
-	GetBusinessById(ctx context.Context, userID string) (res *BusinessEntity, err error)
+	GetBusinessById(ctx context.Context, id string) (res *BusinessEntity, err error)
+	GetBusinessByHandle(ctx context.Context, slug string) (res *BusinessEntity, err error)
 }

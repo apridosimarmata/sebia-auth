@@ -9,8 +9,10 @@ import (
 	"mini-wallet/domain/common/response"
 	"mini-wallet/domain/inquiry"
 	"mini-wallet/domain/services"
+	"mini-wallet/domain/user"
 	"mini-wallet/infrastructure"
 	"mini-wallet/integration"
+	"mini-wallet/utils"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -22,6 +24,7 @@ type inquiryUsecase struct {
 	businessRepository  business.BusinessRepository
 	notificationService integration.NotificationService
 	paymentService      infrastructure.Payment
+	userRepository      user.UserRepository
 }
 
 func NewInquiryUsecase(repositories domain.Repositories, integrations domain.Infrastructure) inquiry.InquiryUsecase {
@@ -31,7 +34,57 @@ func NewInquiryUsecase(repositories domain.Repositories, integrations domain.Inf
 		notificationService: integrations.NotificationService,
 		paymentService:      integrations.PaymentService,
 		businessRepository:  repositories.BusinessRepository,
+		userRepository:      repositories.UserRepository,
 	}
+}
+
+func (usecase *inquiryUsecase) GetInquiryMaskedContact(ctx context.Context, id string) (res response.Response[inquiry.MaskedInquiryContactDTO]) {
+	inquiryEntity, err := usecase.inquiryRepository.GetInquiryById(ctx, id)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	if inquiryEntity == nil {
+		res.NotFound("pesanan tidak ditemukan", nil)
+		return
+	}
+
+	if inquiryEntity.UserID != nil {
+		user, err := usecase.userRepository.GetUserByUserID(ctx, *inquiryEntity.UserID)
+		if err != nil {
+			res.InternalServerError(err.Error())
+			return
+		}
+
+		if user == nil {
+			res.InternalServerError("kesalahan server, data pesanan rusak")
+			return
+		}
+
+		var maskedPhoneNumber *string
+		if user.PhoneNumber != nil {
+			_maskedPhoneNumber := utils.MaskPhone(*user.PhoneNumber)
+			maskedPhoneNumber = &_maskedPhoneNumber
+		}
+
+		res.Success(inquiry.MaskedInquiryContactDTO{
+			Name:        utils.MaskName(user.Name),
+			PhoneNumber: maskedPhoneNumber,
+			Email:       utils.MaskEmail(user.Email),
+		})
+
+		return
+	}
+
+	maskedPhoneNumber := utils.MaskPhone(inquiryEntity.PhoneNumber)
+	res.Success(inquiry.MaskedInquiryContactDTO{
+		Name:        utils.MaskName(inquiryEntity.FullName),
+		PhoneNumber: &maskedPhoneNumber,
+		Email:       utils.MaskEmail(inquiryEntity.Email),
+	})
+
+	return
 }
 
 func (usecase *inquiryUsecase) CreateInquiry(ctx context.Context, req inquiry.InquiryDTO) (res response.Response[string]) {
@@ -44,6 +97,28 @@ func (usecase *inquiryUsecase) CreateInquiry(ctx context.Context, req inquiry.In
 	if serviceEntity == nil {
 		res.NotFound("layanan tidak ditemukan", nil)
 		return
+	}
+
+	if req.UserID == nil {
+		userEntity, err := usecase.userRepository.GetUserByEmail(ctx, req.Email)
+		if err != nil {
+			res.InternalServerError(err.Error())
+			return
+		}
+
+		if userEntity != nil {
+			req.UserID = &userEntity.UID
+		} else {
+			userEntity, err = usecase.userRepository.GetUserByPhoneNumber(ctx, req.PhoneNumber)
+			if err != nil {
+				res.InternalServerError(err.Error())
+				return
+			}
+
+			if userEntity != nil {
+				req.UserID = &userEntity.UID
+			}
+		}
 	}
 
 	selectedVariant, err := usecase.validateSelectedVariant(req, serviceEntity.Variants)
@@ -74,7 +149,7 @@ func (usecase *inquiryUsecase) CreateInquiry(ctx context.Context, req inquiry.In
 	p := message.NewPrinter(language.English)
 	totalString := p.Sprintf("%d", total)
 	err = usecase.notificationService.SendWhatsAppMessage(ctx,
-		fmt.Sprintf("Halo %s,\nBerikut adalah link pembayaranmu untuk pemesanan %s sebesar Rp%s\n\n%s\n\nLakukan pembayaran sebelum 24 jam.\n\nCek status pembayaranmu di sini:\nhttps://tobacamping.id/bookings/%s", entity.FullName, serviceEntity.Title, totalString, url, entity.ID), req.PhoneNumber)
+		fmt.Sprintf("Halo %s,\nBerikut adalah link pembayaranmu untuk pemesanan %s sebesar Rp%s\n\n%s\n\nLakukan pembayaran sebelum 24 jam.\n\nCek status pembayaranmu di sini:\nhttps://sebia.id/bookings/%s", entity.FullName, serviceEntity.Title, totalString, url, entity.ID), req.PhoneNumber)
 	if err != nil {
 		res.InternalServerError(err.Error())
 		return

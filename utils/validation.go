@@ -63,6 +63,14 @@ func ValidateRequiredInt(value int) error {
 	return fmt.Errorf("Empty value provided")
 }
 
+func ValidateRequiredIntAllowsZero(value int) error {
+	if value > -1 {
+		return nil
+	}
+
+	return fmt.Errorf("Empty value provided")
+}
+
 // ValidateFullName checks if the provided full name is valid.
 func ValidateFullName(fullName string) error {
 	nameRegex := regexp.MustCompile(`^[a-zA-Z\s]+$`)

@@ -27,11 +27,28 @@ func SetInquiryHandler(router *chi.Mux, usecases domain.Usecases, middleware _au
 	})
 
 	router.Route("/public/inquiries", func(r chi.Router) {
-		// r.Use(middleware.PublicMiddleware)
+		r.Use(middleware.PublicMiddleware)
 		r.Post("/", inquiryHandler.CreateInquiry)
 		r.Get("/{inquiryId}", inquiryHandler.GetInquiryDetails)
-
+		r.Get("/contact/{inquiryId}", inquiryHandler.GetInquiryMaskedContact)
 	})
+}
+
+func (handler *inquiryHandler) GetInquiryMaskedContact(w http.ResponseWriter, r *http.Request) {
+	resp := &response.Response[string]{
+		Writer: w,
+	}
+
+	inquiryId := chi.URLParam(r, "inquiryId")
+	if inquiryId == "" {
+		resp.BadRequest("invalid inquiry id", nil)
+		return
+	}
+
+	res := handler.inquiryUsecase.GetInquiryMaskedContact(r.Context(), inquiryId)
+	res.Writer = w
+	res.WriteResponse()
+
 }
 
 func (handler *inquiryHandler) GetInquiryDetails(w http.ResponseWriter, r *http.Request) {
@@ -69,13 +86,20 @@ func (handler *inquiryHandler) CreateInquiry(w http.ResponseWriter, r *http.Requ
 		resp.WriteResponse()
 		return
 	}
-	// userID := r.Context().Value(_auth.UserIDContext{}).(*string)
-	// err := req.Validate()
-	// if err != nil {
-	// 	resp.BadRequest(err.Error(), nil)
-	// 	resp.WriteResponse()
-	// 	return
-	// }
+
+	userID := r.Context().Value(_auth.UserIDContext{}).(*string)
+
+	if userID != nil && *userID == "" {
+		userID = nil
+	}
+
+	req.UserID = userID
+	err = req.Validate()
+	if err != nil {
+		resp.BadRequest(err.Error(), nil)
+		resp.WriteResponse()
+		return
+	}
 
 	// req.UserID = userID
 

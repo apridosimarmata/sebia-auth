@@ -50,6 +50,10 @@ func SetAuthHandler(router *chi.Mux, usecases domain.Usecases, middleware _auth.
 		r.Post("/register/google", authHandler.RegisterWithGoogle)
 		r.Post("/login/google", authHandler.AuthenticateByGoogle)
 
+		// from inquiry
+		r.Post("/register/inquiry", authHandler.RegisterUserFromInquiry)
+		r.Post("/login/inquiry", authHandler.AuthenticateFromInquiry)
+
 		// pre authenticated
 		r.Post("/check-identifier", authHandler.CheckIndentifier)
 		r.Post("/login", authHandler.AuthenticateRegularUser)
@@ -60,7 +64,7 @@ func SetAuthHandler(router *chi.Mux, usecases domain.Usecases, middleware _auth.
 
 		// verifications
 		r.Post("/verify-reset-password-token", authHandler.VerifyResetPasswordToken)
-		r.Post("/verify-email", authHandler.VerifyEmail)
+		r.Post("/verify-phone-number", authHandler.VerifyPhoneNumber)
 
 		// passwords
 		r.Post("/password-reset", authHandler.SendPasswordResetLink)
@@ -72,6 +76,54 @@ func SetAuthHandler(router *chi.Mux, usecases domain.Usecases, middleware _auth.
 		r.Use(middleware.AuthMiddleware)
 		r.Get("/", authHandler.RefreshAccess)
 	})
+}
+
+func (handler *authHandler) AuthenticateFromInquiry(w http.ResponseWriter, r *http.Request) {
+	resp := &response.Response[string]{
+		Writer: w,
+	}
+
+	req := _auth.AuthFromInquiryDTO{}
+	if err := render.DecodeJSON(r.Body, &req); err != nil {
+		resp.BadRequest(err.Error(), nil)
+		resp.WriteResponse()
+		return
+	}
+
+	err := req.Validate()
+	if err != nil {
+		resp.BadRequest(err.Error(), nil)
+		resp.WriteResponse()
+		return
+	}
+
+	res := handler.authUsecase.AuthenticateFromInquiry(context.Background(), req)
+	res.Writer = w
+	res.WriteResponse()
+}
+
+func (handler *authHandler) RegisterUserFromInquiry(w http.ResponseWriter, r *http.Request) {
+	resp := &response.Response[string]{
+		Writer: w,
+	}
+
+	req := _auth.AuthFromInquiryDTO{}
+	if err := render.DecodeJSON(r.Body, &req); err != nil {
+		resp.BadRequest(err.Error(), nil)
+		resp.WriteResponse()
+		return
+	}
+
+	err := req.Validate()
+	if err != nil {
+		resp.BadRequest(err.Error(), nil)
+		resp.WriteResponse()
+		return
+	}
+
+	res := handler.authUsecase.RegisterUserFromInquiry(context.Background(), req)
+	res.Writer = w
+	res.WriteResponse()
 }
 
 func (handler *authHandler) RefreshAccess(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +202,7 @@ func (handler *authHandler) SubmitPasswordReset(w http.ResponseWriter, r *http.R
 	res.WriteResponse()
 }
 
-func (handler *authHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+func (handler *authHandler) VerifyPhoneNumber(w http.ResponseWriter, r *http.Request) {
 	resp := &response.Response[string]{
 		Writer: w,
 	}
@@ -168,7 +220,7 @@ func (handler *authHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res := handler.authUsecase.VerifyEmail(context.Background(), req)
+	res := handler.authUsecase.VerifyPhoneNumber(context.Background(), req)
 	res.Writer = w
 	res.WriteResponse()
 }
@@ -302,7 +354,7 @@ func (handler *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		{
 			Name:     "access_token",
 			Value:    "",
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -311,7 +363,7 @@ func (handler *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		{
 			Name:     "refresh_token",
 			Value:    "",
-			Domain:   "tobacamping.id",
+			Domain:   "sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
