@@ -231,8 +231,8 @@ type StsTokenManager struct {
 }
 
 type AuthenticationResponse struct {
-	AccessToken  string `json:"dev_access_token"`
-	RefreshToken string `json:"dev_refresh_token"`
+	AccessToken  string `json:config.AccessTokenKey`
+	RefreshToken string `json:config.RefreshTokenKey`
 }
 
 type AcessTokenClaims struct {

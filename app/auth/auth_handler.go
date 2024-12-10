@@ -15,15 +15,24 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
+	"google.golang.org/api/option"
 )
 
 type authHandler struct {
 	authUsecase         _auth.AuthUsecase
 	firebaseAdminClient *auth.Client
+	config              *utils.AppConfig
 }
 
-func SetAuthHandler(router *chi.Mux, usecases domain.Usecases, middleware _auth.AuthMiddleware) {
-	app, err := firebaseAdmin.NewApp(context.Background(), nil)
+func SetAuthHandler(
+	router *chi.Mux,
+	usecases domain.Usecases,
+	middleware _auth.AuthMiddleware,
+	config *utils.AppConfig,
+) {
+	app, err := firebaseAdmin.NewApp(context.Background(), nil, option.WithCredentialsFile(
+		config.GoogleCredentialsPath,
+	))
 	if err != nil {
 		log.Fatalf("error initializing app: %v\n", err)
 		return
@@ -38,6 +47,7 @@ func SetAuthHandler(router *chi.Mux, usecases domain.Usecases, middleware _auth.
 	authHandler := authHandler{
 		authUsecase:         usecases.AuthUsecase,
 		firebaseAdminClient: client,
+		config:              config,
 	}
 
 	router.Route("/auth/verify", func(r chi.Router) {
@@ -352,7 +362,7 @@ func (handler *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: "",
 	}, []*http.Cookie{
 		{
-			Name:     "dev_access_token",
+			Name:     handler.config.AccessTokenKey,
 			Value:    "",
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -361,7 +371,7 @@ func (handler *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 			Expires:  now.Add(time.Minute * -30),
 		},
 		{
-			Name:     "dev_refresh_token",
+			Name:     handler.config.RefreshTokenKey,
 			Value:    "",
 			Domain:   ".sebia.id",
 			Path:     "/",

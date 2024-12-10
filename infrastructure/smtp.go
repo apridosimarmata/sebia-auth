@@ -21,7 +21,7 @@ const CONFIG_SENDER_NAME = "Namulaki <corporation@namulaki.id>"
 const CONFIG_AUTH_EMAIL = "apikey"
 const CONFIG_AUTH_PASSWORD = "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"
 
-func SendEmailVerificationLink(email string, userFullName string, token string) {
+func SendEmailVerificationLink(email string, userFullName string, token string, domain string) {
 
 	from := mail.NewEmail("Namulaki", "corporation@namulaki.id")
 	// subject := "Reset Password"
@@ -29,7 +29,7 @@ func SendEmailVerificationLink(email string, userFullName string, token string) 
 	to := mail.NewEmail(userFullName, email)
 
 	content := mail.NewContent("text/html", emailtemplates.BuildVerifyEmailTemplate(token))
-	m := mail.NewV3MailInit(from, "Verifikasi Akun dev.sebia.id", to, content)
+	m := mail.NewV3MailInit(from, "Verifikasi Akun "+domain, to, content)
 	m.SetTemplateID(os.Getenv("SENDGRID_TEMPLATE_ID"))
 
 	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "")
@@ -65,7 +65,7 @@ func SendEmailVerificationLink(email string, userFullName string, token string) 
 
 }
 
-func SendPasswordResetLink(email string, userFullName string, token string) {
+func SendPasswordResetLink(email string, userFullName string, token string, domain string) {
 
 	from := mail.NewEmail("Namulaki", "corporation@namulaki.id")
 	// subject := "Reset Password"
@@ -73,7 +73,7 @@ func SendPasswordResetLink(email string, userFullName string, token string) {
 	to := mail.NewEmail(userFullName, email)
 
 	content := mail.NewContent("text/html", emailtemplates.BuildResetPasswordEmailTemplate(token))
-	m := mail.NewV3MailInit(from, "Atur Ulang Kata Sandi dev.sebia.id", to, content)
+	m := mail.NewV3MailInit(from, "Atur Ulang Kata Sandi "+domain, to, content)
 	m.SetTemplateID(os.Getenv("SENDGRID_TEMPLATE_ID"))
 
 	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "")

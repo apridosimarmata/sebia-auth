@@ -17,7 +17,7 @@ func (middleware *authMiddleware) PublicMiddleware(next http.Handler) http.Handl
 }
 
 func (middleware *authMiddleware) getAccessTokenUserId(w *http.ResponseWriter, r *http.Request) (int, *string) {
-	accessToken, err := r.Cookie("dev_access_token")
+	accessToken, err := r.Cookie(middleware.config.AccessTokenKey)
 	if err != nil {
 		if err == http.ErrNoCookie {
 			return _auth.ERROR_INVALID_TOKEN, nil
