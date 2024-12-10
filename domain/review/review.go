@@ -5,6 +5,7 @@ import (
 	"errors"
 	"mini-wallet/domain/common/response"
 	"mini-wallet/utils"
+	"strings"
 	"time"
 )
 
@@ -29,8 +30,9 @@ type ReviewDTO struct {
 }
 
 func (p *ReviewEntity) ToReviewDTO(userName string) ReviewDTO {
+	name := strings.Split(userName, " ")[0]
 	return ReviewDTO{
-		UserName:  userName,
+		UserName:  name,
 		Content:   p.Content,
 		Score:     p.Score,
 		CreatedAt: p.CreatedAt,

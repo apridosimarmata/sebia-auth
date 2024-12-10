@@ -21,12 +21,14 @@ func SetReviewHandler(router *chi.Mux, usecases domain.Usecases, middleware _aut
 		reviewUsecase: usecases.ReviewUsecase,
 	}
 
-	router.Route("/public/reviews", func(r chi.Router) {
+	router.Route("/reviews", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Post("/", reviewHandler.CreateReview)
-		r.Get("/top/{serviceId}", reviewHandler.GetServiceTopReview)
 	})
 
+	router.Route("/public/reviews", func(r chi.Router) {
+		r.Get("/top/{serviceId}", reviewHandler.GetServiceTopReview)
+	})
 }
 
 func (handler *reviewHandler) GetServiceTopReview(w http.ResponseWriter, r *http.Request) {
