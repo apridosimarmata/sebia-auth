@@ -80,7 +80,7 @@ type ServiceVariant struct {
 }
 
 type ServiceDTO struct {
-	ID                *string          ` json:"string" bson:"id"`
+	ID                *string          `json:"id" bson:"id"`
 	Title             string           `json:"title" bson:"title"`
 	Variants          []ServiceVariant `json:"variants" bson:"variants"`
 	TypeID            int              `json:"type_id" bson:"type_id"`
