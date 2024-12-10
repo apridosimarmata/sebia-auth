@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	router := presentation.InitServer()
+	router, port := presentation.InitServer()
 
-	if err := http.ListenAndServe(":3001", router); err == nil {
-		fmt.Println("server listening on port 3001")
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), router); err == nil {
+		fmt.Println("server listening on port " + port)
 	}
 }

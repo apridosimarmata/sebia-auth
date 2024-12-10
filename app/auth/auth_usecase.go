@@ -24,13 +24,15 @@ type authUsecase struct {
 	userRepository      user.UserRepository
 	inquiryRepository   inquiry.InquiryRepository
 	notificationService integration.NotificationService
+	config              *utils.AppConfig
 }
 
-func NewAuthUsecase(repositories domain.Repositories, integrations domain.Infrastructure) auth.AuthUsecase {
+func NewAuthUsecase(repositories domain.Repositories, integrations domain.Infrastructure, config *utils.AppConfig) auth.AuthUsecase {
 	return &authUsecase{
 		userRepository:      repositories.UserRepository,
 		inquiryRepository:   repositories.InquiryRepository,
 		notificationService: integrations.NotificationService,
+		config:              config,
 	}
 }
 
@@ -122,7 +124,7 @@ func (usecase *authUsecase) RegisterUserFromInquiry(ctx context.Context, req aut
 		return
 	}
 	err = usecase.notificationService.SendWhatsAppMessage(ctx,
-		fmt.Sprintf("Halo %s,\nBerikut adalah link verifikasi akun Anda, %s", inquiryEntity.FullName, "https://dev.sebia.id/verify-account?token="+VerificationToken+"&redirect=inquiry&inquiry_id="+inquiryEntity.ID), inquiryEntity.PhoneNumber)
+		fmt.Sprintf("Halo %s,\nBerikut adalah link verifikasi akun Anda, %s", inquiryEntity.FullName, "https://"+usecase.config.AppDomain+"/verify-account?token="+VerificationToken+"&redirect=inquiry&inquiry_id="+inquiryEntity.ID), inquiryEntity.PhoneNumber)
 	if err != nil {
 		res.InternalServerError(err.Error())
 		return
@@ -159,7 +161,7 @@ func (usecase *authUsecase) AuthenticateFromInquiry(ctx context.Context, req aut
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "dev_access_token",
+			Name:     usecase.config.AccessTokenKey,
 			Value:    accessToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -168,7 +170,7 @@ func (usecase *authUsecase) AuthenticateFromInquiry(ctx context.Context, req aut
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "dev_refresh_token",
+			Name:     usecase.config.RefreshTokenKey,
 			Value:    refreshToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -209,7 +211,7 @@ func (usecase *authUsecase) RefreshAccess(ctx context.Context) (res response.Res
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "dev_access_token",
+			Name:     usecase.config.AccessTokenKey,
 			Value:    accessToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -218,7 +220,7 @@ func (usecase *authUsecase) RefreshAccess(ctx context.Context) (res response.Res
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "dev_refresh_token",
+			Name:     usecase.config.RefreshTokenKey,
 			Value:    refreshToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -343,7 +345,7 @@ func (usecase *authUsecase) VerifyPhoneNumber(ctx context.Context, req auth.Veri
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "dev_access_token",
+			Name:     usecase.config.AccessTokenKey,
 			Value:    accessToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -352,7 +354,7 @@ func (usecase *authUsecase) VerifyPhoneNumber(ctx context.Context, req auth.Veri
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "dev_refresh_token",
+			Name:     usecase.config.RefreshTokenKey,
 			Value:    refreshToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -391,7 +393,7 @@ func (usecase *authUsecase) SendPasswordResetLink(ctx context.Context, req auth.
 		return
 	}
 
-	go infrastructure.SendPasswordResetLink(existingUser.Email, existingUser.Name, passwordResetToken)
+	go infrastructure.SendPasswordResetLink(existingUser.Email, existingUser.Name, passwordResetToken, usecase.config.AppDomain)
 
 	res.SuccessWithMessage("Instruksi atur ulang kata sandi terkirim")
 	return res
@@ -463,7 +465,7 @@ func (usecase *authUsecase) AuthenticateRegularUser(ctx context.Context, req aut
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "dev_access_token",
+			Name:     usecase.config.AccessTokenKey,
 			Value:    accessToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -472,7 +474,7 @@ func (usecase *authUsecase) AuthenticateRegularUser(ctx context.Context, req aut
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "dev_refresh_token",
+			Name:     usecase.config.RefreshTokenKey,
 			Value:    refreshToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -507,7 +509,7 @@ func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.G
 			RefreshToken: refreshToken,
 		}, []*http.Cookie{
 			{
-				Name:     "dev_access_token",
+				Name:     usecase.config.AccessTokenKey,
 				Value:    accessToken,
 				Domain:   ".sebia.id",
 				Path:     "/",
@@ -516,7 +518,7 @@ func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.G
 				Expires:  now.Add(time.Hour * 24 * 31),
 			},
 			{
-				Name:     "dev_refresh_token",
+				Name:     usecase.config.RefreshTokenKey,
 				Value:    refreshToken,
 				Domain:   ".sebia.id",
 				Path:     "/",
@@ -568,7 +570,7 @@ func (usecase *authUsecase) RegisterUser(ctx context.Context, req auth.UserRegis
 		return
 	}
 
-	go infrastructure.SendEmailVerificationLink(userEntity.Email, userEntity.Name, userEntity.VerificationToken)
+	go infrastructure.SendEmailVerificationLink(userEntity.Email, userEntity.Name, userEntity.VerificationToken, usecase.config.AppDomain)
 
 	res.SuccessWithMessage("Link verifikasi dikirimkan ke email Anda")
 	return res
@@ -596,7 +598,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 			RefreshToken: refreshToken,
 		}, []*http.Cookie{
 			{
-				Name:     "dev_access_token",
+				Name:     usecase.config.AccessTokenKey,
 				Value:    accessToken,
 				Domain:   ".sebia.id",
 				Path:     "/",
@@ -605,7 +607,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 				Expires:  now.Add(time.Hour * 24 * 31),
 			},
 			{
-				Name:     "dev_refresh_token",
+				Name:     usecase.config.RefreshTokenKey,
 				Value:    accessToken,
 				Domain:   ".sebia.id",
 				Path:     "/",
@@ -631,7 +633,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "dev_access_token",
+			Name:     usecase.config.AccessTokenKey,
 			Value:    accessToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -640,7 +642,7 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "dev_refresh_token",
+			Name:     usecase.config.RefreshTokenKey,
 			Value:    accessToken,
 			Domain:   ".sebia.id",
 			Path:     "/",

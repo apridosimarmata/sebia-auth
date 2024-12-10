@@ -14,11 +14,13 @@ import (
 
 type authMiddleware struct {
 	userRepository user.UserRepository
+	config         *utils.AppConfig
 }
 
-func NewAuthMiddleware(repositories domain.Repositories) _auth.AuthMiddleware {
+func NewAuthMiddleware(repositories domain.Repositories, config *utils.AppConfig) _auth.AuthMiddleware {
 	return &authMiddleware{
 		userRepository: repositories.UserRepository,
+		config:         config,
 	}
 }
 
@@ -49,7 +51,7 @@ func (middleware *authMiddleware) AuthMiddleware(next http.Handler) http.Handler
 }
 
 func (middleware *authMiddleware) processAccessToken(w *http.ResponseWriter, r *http.Request) (int, *string) {
-	accessToken, err := r.Cookie("dev_access_token")
+	accessToken, err := r.Cookie(middleware.config.AccessTokenKey)
 	if err != nil {
 		if err == http.ErrNoCookie {
 			http.Error(*w, "No accessToken found", http.StatusUnauthorized)
@@ -89,7 +91,7 @@ func (middleware *authMiddleware) refreshAccess(ctx context.Context, userId stri
 	now, _ := utils.GetJktTime()
 	cookies := []*http.Cookie{
 		{
-			Name:     "dev_access_token",
+			Name:     middleware.config.AccessTokenKey,
 			Value:    accessToken,
 			Domain:   ".sebia.id",
 			Path:     "/",
@@ -98,7 +100,7 @@ func (middleware *authMiddleware) refreshAccess(ctx context.Context, userId stri
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "dev_refresh_token",
+			Name:     middleware.config.RefreshTokenKey,
 			Value:    refreshToken,
 			Domain:   ".sebia.id",
 			Path:     "/",

@@ -16,13 +16,15 @@ type paymentUsecase struct {
 	inquiryRepository inquiry.InquiryRepository
 	paymentService    infrastructure.Payment
 	messageProducer   infrastructure.MessagingProducer
+	config            *utils.AppConfig
 }
 
-func NewPaymentUsecase(repositories domain.Repositories, integrations domain.Infrastructure) payment.PaymentUsecase {
+func NewPaymentUsecase(repositories domain.Repositories, integrations domain.Infrastructure, config *utils.AppConfig) payment.PaymentUsecase {
 	return &paymentUsecase{
 		inquiryRepository: repositories.InquiryRepository,
 		paymentService:    integrations.PaymentService,
 		messageProducer:   integrations.MesageProducer,
+		config:            config,
 	}
 }
 
@@ -50,7 +52,7 @@ func (usecase *paymentUsecase) HandlePaymentCallback(ctx context.Context, req pa
 			return
 		}
 
-		err = usecase.messageProducer.PublishMessage(ctx, "bookings_dev", "", booking.BookingCreationRequest{
+		err = usecase.messageProducer.PublishMessage(ctx, usecase.config.BookingTopic, "", booking.BookingCreationRequest{
 			InquiryID: req.OrderID,
 		})
 		if err != nil {

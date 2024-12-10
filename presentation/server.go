@@ -10,6 +10,7 @@ import (
 	"mini-wallet/app/file"
 	"mini-wallet/app/inquiry"
 	"mini-wallet/app/review"
+	"mini-wallet/utils"
 
 	"mini-wallet/app/location"
 	"mini-wallet/app/payment"
@@ -30,10 +31,17 @@ type Temporary struct {
 	Message string `json:"message"`
 }
 
-func InitServer() chi.Router {
+func InitServer() (chi.Router, string) {
 	ctx := context.Background()
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
+
+	fmt.Println("reading config")
+
+	config, err := utils.GetConfig()
+	if err != nil {
+		panic("error getting config")
+	}
 
 	// config := infrastructure.GetConfig()
 	//
@@ -41,7 +49,7 @@ func InitServer() chi.Router {
 	grpcConn, err := infrastructure.NewGrpcConn()
 	notificationService := integration.NewNotificationService(&grpcConn.NotificationService)
 
-	mongoDb, err := infrastructure.GetMongoDatabase(ctx)
+	mongoDb, err := infrastructure.GetMongoDatabase(ctx, config.DatabaseName)
 	if err != nil {
 		panic(err)
 	}
@@ -82,24 +90,24 @@ func InitServer() chi.Router {
 	}
 
 	usecases := domain.Usecases{
-		AuthUsecase:      auth.NewAuthUsecase(repositories, infra),
+		AuthUsecase:      auth.NewAuthUsecase(repositories, infra, config),
 		FileUsecase:      file.NewFileUsecase(infra),
 		LocationUsecase:  location.NewLocationUsecase(repositories),
 		BusinessUsecase:  business.NewBusinessUsecase(repositories),
 		AffiliateUsecase: affiliate.NewAffiliatesUsecase(repositories),
 		ServicesUsecase:  services.NewServicesUsecase(repositories),
 		InquiryUsecase:   inquiry.NewInquiryUsecase(repositories, infra),
-		PaymentUsecase:   payment.NewPaymentUsecase(repositories, infra),
+		PaymentUsecase:   payment.NewPaymentUsecase(repositories, infra, config),
 		BookingUsecase:   booking.NewBookingUsecase(repositories, infra),
 		ReviewUsecase:    review.NewReviewUsecase(repositories),
 	}
 
-	middlewares := auth.NewAuthMiddleware(repositories)
+	middlewares := auth.NewAuthMiddleware(repositories, config)
 
 	// messaging
 	go infrastructure.RegisterConsumers([]infrastructure.RegisterListenersParam{
 		{
-			Topic:    "bookings_dev",
+			Topic:    config.BookingTopic,
 			Channel:  "creation",
 			Listener: booking.NewBookingMessageConsumer(usecases),
 		},
@@ -107,7 +115,7 @@ func InitServer() chi.Router {
 
 	// in terms of authorization, a token should not be a forever-lived value
 	// provided a /refresh endpoint to get fresh token
-	auth.SetAuthHandler(router, usecases, middlewares)
+	auth.SetAuthHandler(router, usecases, middlewares, config)
 	file.SetFileHandler(router, usecases)
 	location.SetLocationHandler(router, usecases)
 	business.SetBusinessHandler(router, usecases, middlewares)
@@ -117,9 +125,9 @@ func InitServer() chi.Router {
 	payment.SetPaymentHandler(router, usecases)
 	review.SetReviewHandler(router, usecases, middlewares)
 
-	fmt.Println("server listening on port 3000")
+	fmt.Println("[" + config.AppEnvironment + "] server listening on port " + config.AppPort)
 
-	return router
+	return router, config.AppPort
 }
 
 func StopServer() {
