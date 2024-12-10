@@ -24,8 +24,25 @@ func SetReviewHandler(router *chi.Mux, usecases domain.Usecases, middleware _aut
 	router.Route("/public/reviews", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Post("/", reviewHandler.CreateReview)
+		r.Get("/top/{serviceId}", reviewHandler.GetServiceTopReview)
 	})
 
+}
+
+func (handler *reviewHandler) GetServiceTopReview(w http.ResponseWriter, r *http.Request) {
+	resp := response.Response[string]{
+		Writer: w,
+	}
+
+	serviceId := chi.URLParam(r, "serviceId")
+	if serviceId == "" {
+		resp.BadRequest("serviceId can not be ampty", nil)
+		return
+	}
+
+	res := handler.reviewUsecase.GetServiceTopReview(r.Context(), serviceId)
+	res.Writer = w
+	res.WriteResponse()
 }
 
 func (handler *reviewHandler) CreateReview(w http.ResponseWriter, r *http.Request) {

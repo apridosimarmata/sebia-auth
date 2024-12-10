@@ -23,10 +23,10 @@ type paymentImplementation struct {
 	serverKey  string
 }
 
-func NewPayment(snapClient *snap.Client) Payment {
+func NewPayment(snapClient *snap.Client, midtransServerKey string) Payment {
 	return &paymentImplementation{
 		snapClient: snapClient,
-		serverKey:  "Mid-server-9ZpQXdhK925cSTsjNV7bbcJX",
+		serverKey:  midtransServerKey,
 	}
 }
 

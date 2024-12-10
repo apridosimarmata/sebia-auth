@@ -79,13 +79,13 @@ func InitServer() (chi.Router, string) {
 		panic(err.Error())
 	}
 
-	snapClient := integration.NewSnapClient()
+	snapClient := integration.NewSnapClient(config)
 	messagingProducer := infrastructure.NewMessagingProducer()
 
 	infra := domain.Infrastructure{
 		S3:                  *s3,
 		NotificationService: notificationService,
-		PaymentService:      infrastructure.NewPayment(snapClient),
+		PaymentService:      infrastructure.NewPayment(snapClient, config.MidtransServerKey),
 		MesageProducer:      messagingProducer,
 	}
 
