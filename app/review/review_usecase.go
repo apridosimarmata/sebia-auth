@@ -7,6 +7,7 @@ import (
 	"mini-wallet/domain/inquiry"
 	"mini-wallet/domain/review"
 	"mini-wallet/domain/services"
+	"mini-wallet/domain/user"
 	"mini-wallet/utils"
 	"time"
 )
@@ -15,6 +16,7 @@ type reviewUsecase struct {
 	reviewRepository  review.ReviewRepository
 	serviceRepository services.ServicesRepository
 	inquiryRepository inquiry.InquiryRepository
+	userRepository    user.UserRepository
 }
 
 func NewReviewUsecase(repositories domain.Repositories) review.ReviewUsecase {
@@ -23,7 +25,37 @@ func NewReviewUsecase(repositories domain.Repositories) review.ReviewUsecase {
 		reviewRepository:  repositories.ReviewRepository,
 		serviceRepository: repositories.ServicesRepository,
 		inquiryRepository: repositories.InquiryRepository,
+		userRepository:    repositories.UserRepository,
 	}
+}
+
+func (uc *reviewUsecase) GetServiceTopReview(ctx context.Context, serviceId string) (res response.Response[*review.ReviewDTO]) {
+	review, err := uc.reviewRepository.GetServiceTopReview(ctx, serviceId)
+	if err != nil {
+		res.InternalServerError("no such review")
+		return
+	}
+
+	if review == nil {
+		res.Success(nil)
+		return
+	}
+
+	user, err := uc.userRepository.GetUserByUserID(ctx, review.UserID)
+	if err != nil {
+		res.InternalServerError("no such review")
+		return
+	}
+
+	if user == nil {
+		res.Success(nil)
+		return
+	}
+
+	result := review.ToReviewDTO(user.Name)
+
+	res.Success(&result)
+	return
 }
 
 func (uc *reviewUsecase) CreateReview(ctx context.Context, req review.ReviewDTO) (res response.Response[string]) {

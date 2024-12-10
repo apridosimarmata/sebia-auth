@@ -22,15 +22,28 @@ type ReviewEntity struct {
 type ReviewDTO struct {
 	InquiryID string `json:"inquiry_id"`
 	UserID    string `json:"user_id"`
+	UserName  string `json:"user_name"`
 	Content   string `json:"content"`
 	Score     int    `json:"score"`
+	CreatedAt string `json:"created_at"`
+}
+
+func (p *ReviewEntity) ToReviewDTO(userName string) ReviewDTO {
+	return ReviewDTO{
+		UserName:  userName,
+		Content:   p.Content,
+		Score:     p.Score,
+		CreatedAt: p.CreatedAt,
+	}
 }
 
 type ReviewUsecase interface {
 	CreateReview(ctx context.Context, req ReviewDTO) (res response.Response[string])
+	GetServiceTopReview(ctx context.Context, serviceId string) (res response.Response[*ReviewDTO])
 }
 
 type ReviewRepository interface {
+	GetServiceTopReview(ctx context.Context, serviceId string) (res *ReviewEntity, err error)
 	InsertReview(ctx context.Context, review ReviewEntity) (err error)
 }
 

@@ -11,6 +11,7 @@ type AppConfig struct {
 	DatabaseName          string `mapstructure:"DATABASE_NAME"`
 	BookingTopic          string `mapstructure:"BOOKING_TOPIC"`
 	GoogleCredentialsPath string `mapstructure:"GOOGLE_CREDENTIALS_PATH"`
+	MidtransServerKey     string `mapstructure:"MIDTRANS_SERVER_KEY"`
 }
 
 func GetConfig() (config *AppConfig, err error) {
