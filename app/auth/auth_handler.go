@@ -352,18 +352,18 @@ func (handler *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: "",
 	}, []*http.Cookie{
 		{
-			Name:     "access_token",
+			Name:     "dev_access_token",
 			Value:    "",
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
 			Expires:  now.Add(time.Minute * -30),
 		},
 		{
-			Name:     "refresh_token",
+			Name:     "dev_refresh_token",
 			Value:    "",
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,

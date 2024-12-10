@@ -99,7 +99,7 @@ func InitServer() chi.Router {
 	// messaging
 	go infrastructure.RegisterConsumers([]infrastructure.RegisterListenersParam{
 		{
-			Topic:    "bookings",
+			Topic:    "bookings_dev",
 			Channel:  "creation",
 			Listener: booking.NewBookingMessageConsumer(usecases),
 		},

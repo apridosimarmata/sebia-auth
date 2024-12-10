@@ -68,8 +68,8 @@ type ServiceEntity struct {
 	OpenForAffiliateBool bool `json:"open_for_affiliate_bool" bson:"open_for_affiliate_bool"`
 	AffiliateComission   int  `json:"affiliate_comission" bson:"affiliate_comission"`
 
-	AverageScore float32 `json:"-" bson:"average_score"` // never allow this value modified by client
-	ReviewCount  int     `json:"-" bson:"review_count"`
+	TotalScore  int `json:"-" bson:"total_score"` // never allow this value modified by client
+	ReviewCount int `json:"-" bson:"review_count"`
 }
 
 type ServiceVariant struct {
@@ -99,10 +99,10 @@ type ServiceDTO struct {
 	MeasurementString string `json:"measurement_string" bson:"measurement_string"`
 
 	//
-	OpenForAffiliate   int     `json:"open_for_affiliate" bson:"open_for_affiliate"`
-	AffiliateComission int     `json:"affiliate_comission" bson:"affiliate_comission"`
-	AverageScore       float32 `json:"average_score" bson:"average_score"` // never allow this value modified by client
-	ReviewCount        int     `json:"review_count" bson:"review_count"`
+	OpenForAffiliate   int `json:"open_for_affiliate" bson:"open_for_affiliate"`
+	AffiliateComission int `json:"affiliate_comission" bson:"affiliate_comission"`
+	TotalScore         int `json:"total_score" bson:"total_score"` // never allow this value modified by client
+	ReviewCount        int `json:"review_count" bson:"review_count"`
 }
 
 type EventDetails struct {

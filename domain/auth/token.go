@@ -27,7 +27,7 @@ func GenerateJWT(user user.UserEntity, tokenType string) (string, error) {
 		Name:   user.Name,
 		UserID: user.UID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "https://sebia.id",
+			Issuer:    "https://dev.sebia.id",
 			Subject:   user.UID,
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

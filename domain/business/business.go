@@ -106,7 +106,7 @@ type BusinessCreationDTO struct {
 	ProvinceID         int64  `json:"province_id"`
 	DistrictID         int64  `json:"district_id"`
 	UserID             string `json:"user_id"`
-	// UserID derived from access_token
+	// UserID derived from dev_access_token
 }
 
 type BusinessDTO struct {
@@ -118,7 +118,7 @@ type BusinessDTO struct {
 	ProvinceID         int64  `json:"province_id"`
 	Status             string `json:"status"`
 	DistrictID         int64  `json:"district_id"`
-	// UserID derived from access_token
+	// UserID derived from dev_access_token
 }
 
 type PublicBusinessDTO struct {
@@ -135,7 +135,7 @@ type PublicBusinessDTO struct {
 	Province string `json:"province"`
 	// District string `json:"district"`
 
-	// UserID derived from access_token
+	// UserID derived from dev_access_token
 }
 
 func (p *BusinessEntity) ToPublicBusinessDTO(province string, city string) PublicBusinessDTO {

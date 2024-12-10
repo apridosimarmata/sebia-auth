@@ -126,7 +126,7 @@ func BuildResetPasswordEmailTemplate(token string) string {
 									valign="top">
 									<h3>Halo,</h3>
 									<p
-									style="font-family: Helvetica, sans-serif; font-size: 16px; font-weight: normal; margin: 0; margin-bottom: 16px;">Seseorang baru saja meminta link mengatur ulang kata sandi di <b>sebia.id</b><br>Klik tombol di bawah ini untuk mengatur ulang kata sandi Anda</p>
+									style="font-family: Helvetica, sans-serif; font-size: 16px; font-weight: normal; margin: 0; margin-bottom: 16px;">Seseorang baru saja meminta link mengatur ulang kata sandi di <b>dev.sebia.id</b><br>Klik tombol di bawah ini untuk mengatur ulang kata sandi Anda</p>
 									<table role="presentation" border="0" cellpadding="0" cellspacing="0"
 										class="btn btn-primary"
 										style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%; min-width: 100%;"
@@ -142,7 +142,7 @@ func BuildResetPasswordEmailTemplate(token string) string {
 															<tr>
 																<td style="font-family: Helvetica, sans-serif; font-size: 16px; vertical-align: top; border-radius: 4px; text-align: center; background-color: #0867ec;"
 																	valign="top" align="center" bgcolor="#0867ec"> <a
-																		href="https://sebia.id/reset-password?token=` + token + `" target="_blank"
+																		href="https://dev.sebia.id/reset-password?token=` + token + `" target="_blank"
 																		style="border: solid 2px #0867ec; border-radius: 4px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 16px; font-weight: bold; margin: 0; padding: 12px 24px; text-decoration: none; text-transform: capitalize; background-color: #0867ec; border-color: #0867ec; color: #ffffff;">Lanjutkan</a> </td>
 															</tr>
 														</tbody>
@@ -176,9 +176,9 @@ func BuildResetPasswordEmailTemplate(token string) string {
 										style="font-family: Helvetica, sans-serif; vertical-align: top; color: #9a9ea6; font-size: 13px; text-align: center;"
 										valign="top" align="center">
 										<span class="apple-link"
-											style="color: #9a9ea6; font-size: 13px; text-align: center;">sebia.id, gerbang pengalaman liburan seru.</span>
-										<br> Butuh bantuan? Hubungi kami di <a href="https://sebia.id"
-											style="text-decoration: underline; color: #9a9ea6; font-size: 13px; text-align: center;">support@sebia.id</a>.
+											style="color: #9a9ea6; font-size: 13px; text-align: center;">dev.sebia.id, gerbang pengalaman liburan seru.</span>
+										<br> Butuh bantuan? Hubungi kami di <a href="https://dev.sebia.id"
+											style="text-decoration: underline; color: #9a9ea6; font-size: 13px; text-align: center;">support@dev.sebia.id</a>.
 									</td>
 								</tr>
 	

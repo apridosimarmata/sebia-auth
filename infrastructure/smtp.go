@@ -29,7 +29,7 @@ func SendEmailVerificationLink(email string, userFullName string, token string) 
 	to := mail.NewEmail(userFullName, email)
 
 	content := mail.NewContent("text/html", emailtemplates.BuildVerifyEmailTemplate(token))
-	m := mail.NewV3MailInit(from, "Verifikasi Akun Sebia.id", to, content)
+	m := mail.NewV3MailInit(from, "Verifikasi Akun dev.sebia.id", to, content)
 	m.SetTemplateID(os.Getenv("SENDGRID_TEMPLATE_ID"))
 
 	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "")
@@ -73,7 +73,7 @@ func SendPasswordResetLink(email string, userFullName string, token string) {
 	to := mail.NewEmail(userFullName, email)
 
 	content := mail.NewContent("text/html", emailtemplates.BuildResetPasswordEmailTemplate(token))
-	m := mail.NewV3MailInit(from, "Atur Ulang Kata Sandi Sebia.id", to, content)
+	m := mail.NewV3MailInit(from, "Atur Ulang Kata Sandi dev.sebia.id", to, content)
 	m.SetTemplateID(os.Getenv("SENDGRID_TEMPLATE_ID"))
 
 	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "")

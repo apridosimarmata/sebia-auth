@@ -50,7 +50,7 @@ func (usecase *paymentUsecase) HandlePaymentCallback(ctx context.Context, req pa
 			return
 		}
 
-		err = usecase.messageProducer.PublishMessage(ctx, "bookings", "", booking.BookingCreationRequest{
+		err = usecase.messageProducer.PublishMessage(ctx, "bookings_dev", "", booking.BookingCreationRequest{
 			InquiryID: req.OrderID,
 		})
 		if err != nil {

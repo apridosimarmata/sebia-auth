@@ -79,16 +79,8 @@ func (uc *reviewUsecase) CreateReview(ctx context.Context, req review.ReviewDTO)
 		return
 	}
 
-	avgScore := float32(1.0)
-	if serviceEntity.AverageScore == 0 {
-		avgScore = float32(req.Score)
-	} else {
-		sum := serviceEntity.AverageScore + float32(req.Score)
-		avgScore = sum / 2
-	}
-
 	serviceUpdated := serviceEntity.ToServiceEntity(serviceEntity.ID)
-	serviceUpdated.AverageScore = avgScore
+	serviceUpdated.TotalScore += req.Score
 	serviceUpdated.ReviewCount += 1
 	err = uc.serviceRepository.UpdateService(ctx, serviceUpdated)
 	if err != nil {

@@ -149,7 +149,7 @@ func (usecase *inquiryUsecase) CreateInquiry(ctx context.Context, req inquiry.In
 	p := message.NewPrinter(language.English)
 	totalString := p.Sprintf("%d", total)
 	err = usecase.notificationService.SendWhatsAppMessage(ctx,
-		fmt.Sprintf("Halo %s,\nBerikut adalah link pembayaranmu untuk pemesanan %s sebesar Rp%s\n\n%s\n\nLakukan pembayaran sebelum 24 jam.\n\nCek status pembayaranmu di sini:\nhttps://sebia.id/bookings/%s", entity.FullName, serviceEntity.Title, totalString, url, entity.ID), req.PhoneNumber)
+		fmt.Sprintf("Halo %s,\nBerikut adalah link pembayaranmu untuk pemesanan %s sebesar Rp%s\n\n%s\n\nLakukan pembayaran sebelum 24 jam.\n\nCek status pembayaranmu di sini:\nhttps://dev.sebia.id/bookings/%s", entity.FullName, serviceEntity.Title, totalString, url, entity.ID), req.PhoneNumber)
 	if err != nil {
 		res.InternalServerError(err.Error())
 		return

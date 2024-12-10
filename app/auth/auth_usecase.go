@@ -122,7 +122,7 @@ func (usecase *authUsecase) RegisterUserFromInquiry(ctx context.Context, req aut
 		return
 	}
 	err = usecase.notificationService.SendWhatsAppMessage(ctx,
-		fmt.Sprintf("Halo %s,\nBerikut adalah link verifikasi akun Anda, %s", inquiryEntity.FullName, "https://sebia.id/verify-account?token="+VerificationToken+"&redirect=inquiry&inquiry_id="+inquiryEntity.ID), inquiryEntity.PhoneNumber)
+		fmt.Sprintf("Halo %s,\nBerikut adalah link verifikasi akun Anda, %s", inquiryEntity.FullName, "https://dev.sebia.id/verify-account?token="+VerificationToken+"&redirect=inquiry&inquiry_id="+inquiryEntity.ID), inquiryEntity.PhoneNumber)
 	if err != nil {
 		res.InternalServerError(err.Error())
 		return
@@ -159,18 +159,18 @@ func (usecase *authUsecase) AuthenticateFromInquiry(ctx context.Context, req aut
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "access_token",
+			Name:     "dev_access_token",
 			Value:    accessToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "refresh_token",
+			Name:     "dev_refresh_token",
 			Value:    refreshToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -209,18 +209,18 @@ func (usecase *authUsecase) RefreshAccess(ctx context.Context) (res response.Res
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "access_token",
+			Name:     "dev_access_token",
 			Value:    accessToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "refresh_token",
+			Name:     "dev_refresh_token",
 			Value:    refreshToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -343,18 +343,18 @@ func (usecase *authUsecase) VerifyPhoneNumber(ctx context.Context, req auth.Veri
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "access_token",
+			Name:     "dev_access_token",
 			Value:    accessToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "refresh_token",
+			Name:     "dev_refresh_token",
 			Value:    refreshToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -463,18 +463,18 @@ func (usecase *authUsecase) AuthenticateRegularUser(ctx context.Context, req aut
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "access_token",
+			Name:     "dev_access_token",
 			Value:    accessToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "refresh_token",
+			Name:     "dev_refresh_token",
 			Value:    refreshToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
@@ -507,18 +507,18 @@ func (usecase *authUsecase) AuthenticateByGoogle(ctx context.Context, req auth.G
 			RefreshToken: refreshToken,
 		}, []*http.Cookie{
 			{
-				Name:     "access_token",
+				Name:     "dev_access_token",
 				Value:    accessToken,
-				Domain:   "sebia.id",
+				Domain:   ".sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
 				Expires:  now.Add(time.Hour * 24 * 31),
 			},
 			{
-				Name:     "refresh_token",
+				Name:     "dev_refresh_token",
 				Value:    refreshToken,
-				Domain:   "sebia.id",
+				Domain:   ".sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
@@ -596,18 +596,18 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 			RefreshToken: refreshToken,
 		}, []*http.Cookie{
 			{
-				Name:     "access_token",
+				Name:     "dev_access_token",
 				Value:    accessToken,
-				Domain:   "sebia.id",
+				Domain:   ".sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
 				Expires:  now.Add(time.Hour * 24 * 31),
 			},
 			{
-				Name:     "refresh_token",
+				Name:     "dev_refresh_token",
 				Value:    accessToken,
-				Domain:   "sebia.id",
+				Domain:   ".sebia.id",
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   true,
@@ -631,18 +631,18 @@ func (usecase *authUsecase) RegisterByGoogle(ctx context.Context, req auth.Googl
 		RefreshToken: refreshToken,
 	}, []*http.Cookie{
 		{
-			Name:     "access_token",
+			Name:     "dev_access_token",
 			Value:    accessToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "refresh_token",
+			Name:     "dev_refresh_token",
 			Value:    accessToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,

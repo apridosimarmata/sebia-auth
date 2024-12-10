@@ -16,5 +16,5 @@ func GetMongoDatabase(ctx context.Context) (db *mongo.Database, err error) {
 		return nil, err
 	}
 
-	return client.Database("gerbang_toba"), nil
+	return client.Database("sebia-dev"), nil
 }

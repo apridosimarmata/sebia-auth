@@ -49,7 +49,7 @@ func (middleware *authMiddleware) AuthMiddleware(next http.Handler) http.Handler
 }
 
 func (middleware *authMiddleware) processAccessToken(w *http.ResponseWriter, r *http.Request) (int, *string) {
-	accessToken, err := r.Cookie("access_token")
+	accessToken, err := r.Cookie("dev_access_token")
 	if err != nil {
 		if err == http.ErrNoCookie {
 			http.Error(*w, "No accessToken found", http.StatusUnauthorized)
@@ -89,18 +89,18 @@ func (middleware *authMiddleware) refreshAccess(ctx context.Context, userId stri
 	now, _ := utils.GetJktTime()
 	cookies := []*http.Cookie{
 		{
-			Name:     "access_token",
+			Name:     "dev_access_token",
 			Value:    accessToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
 			Expires:  now.Add(time.Hour * 24 * 31),
 		},
 		{
-			Name:     "refresh_token",
+			Name:     "dev_refresh_token",
 			Value:    refreshToken,
-			Domain:   "sebia.id",
+			Domain:   ".sebia.id",
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,

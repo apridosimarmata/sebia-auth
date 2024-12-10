@@ -231,8 +231,8 @@ type StsTokenManager struct {
 }
 
 type AuthenticationResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"dev_access_token"`
+	RefreshToken string `json:"dev_refresh_token"`
 }
 
 type AcessTokenClaims struct {
@@ -284,6 +284,7 @@ func (p *UserRegistrationDTO) ToTemporaryUserEntity() (res *user.TemporaryUserEn
 	}
 
 	return &user.TemporaryUserEntity{
+		UID:               utils.GenerateUniqueId(),
 		Name:              p.Name,
 		Email:             p.Email,
 		PhoneNumber:       &p.PhoneNumber,
