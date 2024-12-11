@@ -21,6 +21,23 @@ func NewSEOUsecase(repositories domain.Repositories) seo.SEOUsecase {
 	}
 }
 
+func (usecase *seoUsecase) GetItemsByCategoryId(ctx context.Context, id int) (res response.Response[[]seo.FooterServiceItem]) {
+
+	group, err := usecase.SEORepository.GetGroupByCategoryId(ctx, id)
+	if err != nil {
+		res.InternalServerError(err.Error())
+		return
+	}
+
+	if group == nil {
+		res.Success([]seo.FooterServiceItem{})
+		return
+	}
+
+	res.Success(group.Items)
+	return
+}
+
 func (usecase *seoUsecase) PopulateFooterGroupForEachCategoryId(ctx context.Context) (res response.Response[string]) {
 
 	for _, categoryId := range []int{1, 2, 3, 4, 5} {

@@ -20,6 +20,22 @@ func NewSEORepository(repositoryParam domain.RepositoryParam) seo.SEORepository 
 	}
 }
 
+func (repository *seoRepository) GetGroupByCategoryId(ctx context.Context, id int) (res *seo.FooterGroupByCategoryID, err error) {
+	filter := bson.M{
+		"category_id": id,
+	}
+
+	result := repository.seoCollection.FindOne(ctx, filter, nil)
+
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	result.Decode(&res)
+
+	return res, nil
+}
+
 func (repository *seoRepository) UpsertFooterGroupByCategoryId(ctx context.Context, entity seo.FooterGroupByCategoryID) error {
 	filter := bson.M{
 		"category_id": entity.CategoryId,
