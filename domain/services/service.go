@@ -53,7 +53,7 @@ type ServiceEntity struct {
 	TypeID            int `bson:"type_id"`
 	MeasurementUnitID int `bson:"measurement_unit_id"`
 
-	CategoryPath      string `bson:"category_path"`
+	TypePath          string `bson:"type_path"`
 	MeasurementString string `bson:"measurement_string"`
 	TypeString        string `bson:"type_string"`
 	CategoryString    string `bson:"category_string"`
@@ -91,9 +91,9 @@ type ServiceDTO struct {
 	MeasurementUnitID int              `json:"measurement_unit_id" bson:"measurement_unit_id"`
 	BusinessID        string           `json:"business_id" bson:"business_id"`
 	Slug              string           `json:"slug,omitempty" bson:"slug"`
-	CategoryPath      string           `json:"category_path" bson:"category_path"`
 	EventDetails      *EventDetails    `json:"event_details,omitempty" bson:"event_details"`
 
+	TypePath          string `json:"type_path" bson:"type_path"`
 	TypeString        string `json:"type_string" bson:"type_string"`
 	CategoryString    string `json:"category_string" bson:"category_string"`
 	MeasurementString string `json:"measurement_string" bson:"measurement_string"`
@@ -120,7 +120,7 @@ type MiniServiceDTO struct {
 	CategoryID         int            `json:"category_id" bson:"category_id"`
 	Description        string         `json:"description" bson:"description"`
 	Photos             []string       `json:"photos" bson:"photos"`
-	CategoryPath       string         `json:"category_path" bson:"category_path"`
+	TypePath           string         `json:"type_path" bson:"type_path"`
 	IsEvent            bool           `json:"is_event" bson:"is_event"`
 	MeasurementString  string         `json:"measurement_string" bson:"measurement_string"`
 	TypeString         string         `json:"type_string" bson:"type_string"`
@@ -225,7 +225,7 @@ func (p *ServiceDTO) ToServiceEntity(serviceId *string) ServiceEntity {
 		BusinessID:        p.BusinessID,
 		CreatedAt:         now.Unix(),
 		UpdatedAt:         now.Unix(),
-		CategoryPath:      typePathMap[p.CategoryID],
+		TypePath:          typePathMap[p.CategoryID],
 		EventDetails:      eventDetails,
 		IsEvent:           eventDetails != nil,
 		// strings

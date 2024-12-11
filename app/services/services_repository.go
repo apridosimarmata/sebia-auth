@@ -45,7 +45,7 @@ func (repository *servicesRepository) GetBusinessPublicServices(ctx context.Cont
 				Value: 1,
 			},
 			{
-				Key:   "category_path",
+				Key:   "type_path",
 				Value: 1,
 			},
 			{
@@ -111,7 +111,7 @@ func (repository *servicesRepository) GetPublicServices(ctx context.Context, req
 				Value: 1,
 			},
 			{
-				Key:   "category_path",
+				Key:   "type_path",
 				Value: 1,
 			},
 			{
