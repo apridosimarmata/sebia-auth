@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mini-wallet/domain"
 	"mini-wallet/domain/booking"
+	"mini-wallet/domain/business"
 	"mini-wallet/domain/inquiry"
 	"mini-wallet/domain/services"
 	"mini-wallet/integration"
@@ -20,6 +21,7 @@ type bookingUsecase struct {
 	bookingRepository   booking.BookingRepository
 	serviceRepository   services.ServicesRepository
 	notificationService integration.NotificationService
+	businessRepository  business.BusinessRepository
 }
 
 func NewBookingUsecase(repositories domain.Repositories, integrations domain.Infrastructure) booking.BookingUsecase {
@@ -29,6 +31,7 @@ func NewBookingUsecase(repositories domain.Repositories, integrations domain.Inf
 		bookingRepository:   repositories.BookingRepository,
 		notificationService: integrations.NotificationService,
 		serviceRepository:   repositories.ServicesRepository,
+		businessRepository:  repositories.BusinessRepository,
 	}
 }
 
@@ -162,9 +165,16 @@ func (usecase *bookingUsecase) CreateBooking(ctx context.Context, inquiryID stri
 		return err
 	}
 
-	_ = usecase.notificationService.
-		SendWhatsAppMessage(ctx, fmt.Sprintf("Hi %s, Berikut adalah kode konfirmasimu [%s] untuk pemesanan di %s!", inquiryEntity.FullName, confirmationCodeUppercase, service.Title), inquiryEntity.PhoneNumber)
+	host, err := usecase.businessRepository.GetBusinessById(ctx, service.BusinessID)
+	if err != nil {
+		return err
+	}
 
+	_ = usecase.notificationService.
+		SendWhatsAppMessage(ctx, buildGuestBookingConfirmationMessage(*inquiryEntity, confirmationCodeUppercase, service.ToServiceEntity(service.ID), *host), inquiryEntity.PhoneNumber)
+
+	_ = usecase.notificationService.
+		SendWhatsAppMessage(ctx, buildHostBookingConfirmationMessage(*inquiryEntity, *host, service.ToServiceEntity(service.ID)), host.PhoneNumber)
 	return nil
 }
 
