@@ -225,7 +225,7 @@ func (p *ServiceDTO) ToServiceEntity(serviceId *string) ServiceEntity {
 		BusinessID:        p.BusinessID,
 		CreatedAt:         now.Unix(),
 		UpdatedAt:         now.Unix(),
-		TypePath:          typePathMap[p.CategoryID],
+		TypePath:          typePathMap[p.TypeID],
 		EventDetails:      eventDetails,
 		IsEvent:           eventDetails != nil,
 		// strings
