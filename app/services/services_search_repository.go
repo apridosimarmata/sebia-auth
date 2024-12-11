@@ -37,10 +37,10 @@ func (repo *servicesSearchRepository) SearchServices(ctx context.Context, keywor
 	// Project only the title and slug fields
 	projectStage := bson.D{
 		{"$project", bson.D{
-			{"title", 1},         // Include title
-			{"slug", 1},          // Include slug
-			{"category_path", 1}, // Include slug
-			{"_id", 0},           // Exclude the _id field
+			{"title", 1},     // Include title
+			{"slug", 1},      // Include slug
+			{"type_path", 1}, // Include slug
+			{"_id", 0},       // Exclude the _id field
 		}},
 	}
 

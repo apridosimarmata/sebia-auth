@@ -263,9 +263,9 @@ type ServicesUsecase interface {
 }
 
 type ServiceSearchResultDTO struct {
-	Title        string `bson:"title" json:"title"`
-	Slug         string `bson:"slug" json:"slug"`
-	CategoryPath string `bson:"category_path" json:"category_path"`
+	Title    string `bson:"title" json:"title"`
+	Slug     string `bson:"slug" json:"slug"`
+	TypePath string `bson:"type_path" json:"type_path"`
 }
 
 type GetPublicServicesRequest struct {
