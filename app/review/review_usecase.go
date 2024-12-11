@@ -111,9 +111,11 @@ func (uc *reviewUsecase) CreateReview(ctx context.Context, req review.ReviewDTO)
 		return
 	}
 
+	newScore := serviceEntity.TotalScore + req.Score
+	newReviewCount := serviceEntity.ReviewCount + 1
 	serviceUpdated := serviceEntity.ToServiceEntity(serviceEntity.ID)
-	serviceUpdated.TotalScore += req.Score
-	serviceUpdated.ReviewCount += 1
+	serviceUpdated.TotalScore += newScore
+	serviceUpdated.ReviewCount += newReviewCount
 	err = uc.serviceRepository.UpdateService(ctx, serviceUpdated)
 	if err != nil {
 		res.InternalServerError(err.Error())
