@@ -54,7 +54,7 @@ func (repo *bookingRepository) UpsertBookingsDocument(ctx context.Context, tx *m
 		result := repo.bookingCollection.FindOneAndUpdate(*tx, filter, update, opts)
 
 		if result.Err() != nil {
-			return err
+			return result.Err()
 		}
 	}
 

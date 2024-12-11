@@ -10,8 +10,10 @@ import (
 	"mini-wallet/domain/locations"
 	"mini-wallet/domain/payment"
 	"mini-wallet/domain/review"
+	"mini-wallet/domain/seo"
 	"mini-wallet/domain/services"
 	"mini-wallet/domain/user"
+
 	"mini-wallet/infrastructure"
 	"mini-wallet/integration"
 
@@ -31,6 +33,7 @@ type Repositories struct {
 	InquiryRepository inquiry.InquiryRepository
 	BookingRepository booking.BookingRepository
 	ReviewRepository  review.ReviewRepository
+	SEORepository     seo.SEORepository
 }
 
 type Usecases struct {
@@ -44,6 +47,7 @@ type Usecases struct {
 	PaymentUsecase   payment.PaymentUsecase
 	BookingUsecase   booking.BookingUsecase
 	ReviewUsecase    review.ReviewUsecase
+	SEOUsecase       seo.SEOUsecase
 }
 
 type Infrastructure struct {

@@ -10,6 +10,7 @@ import (
 	"mini-wallet/app/file"
 	"mini-wallet/app/inquiry"
 	"mini-wallet/app/review"
+	"mini-wallet/app/seo"
 	"mini-wallet/utils"
 
 	"mini-wallet/app/location"
@@ -72,6 +73,7 @@ func InitServer() (chi.Router, string) {
 		BookingRepository:        booking.NewBookingRepository(repositoryParam),
 		ServicesSearchRepository: services.NewServicesSearchRepository(repositoryParam),
 		ReviewRepository:         review.NewReviewRepository(repositoryParam),
+		SEORepository:            seo.NewSEORepository(repositoryParam),
 	}
 
 	s3, err := infrastructure.NewS3Service()
@@ -100,6 +102,7 @@ func InitServer() (chi.Router, string) {
 		PaymentUsecase:   payment.NewPaymentUsecase(repositories, infra, config),
 		BookingUsecase:   booking.NewBookingUsecase(repositories, infra),
 		ReviewUsecase:    review.NewReviewUsecase(repositories),
+		SEOUsecase:       seo.NewSEOUsecase(repositories),
 	}
 
 	middlewares := auth.NewAuthMiddleware(repositories, config)
@@ -124,6 +127,7 @@ func InitServer() (chi.Router, string) {
 	inquiry.SetInquiryHandler(router, usecases, middlewares)
 	payment.SetPaymentHandler(router, usecases)
 	review.SetReviewHandler(router, usecases, middlewares)
+	seo.SetSeoHandler(router, usecases)
 
 	fmt.Println("[" + config.AppEnvironment + "] server listening on port " + config.AppPort)
 

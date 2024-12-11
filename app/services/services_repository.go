@@ -21,6 +21,20 @@ func NewServicesRepository(repositoryParam domain.RepositoryParam) services.Serv
 	}
 }
 
+func (repository *servicesRepository) GetServicesByCategoryID(ctx context.Context, id int) (res []services.ServiceEntity, err error) {
+	filter := bson.M{"category_id": id}
+	findOptions := options.Find()
+	findOptions.SetLimit(10)
+
+	result, err := repository.servicesCollection.Find(ctx, filter, findOptions)
+	if result.Err() != nil {
+		return nil, err
+	}
+
+	result.All(ctx, &res)
+	return res, nil
+}
+
 func (repository *servicesRepository) GetBusinessPublicServices(ctx context.Context, req services.GetPublicServicesRequest) ([]services.MiniServiceDTO, error) {
 	options := options.Find().SetProjection(
 		bson.D{

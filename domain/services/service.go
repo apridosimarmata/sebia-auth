@@ -246,6 +246,7 @@ type ServicesRepository interface {
 	GetServices(ctx context.Context, req GetServicesRequest) ([]MiniServiceDTO, error)
 	GetServiceBySlug(ctx context.Context, slug string) (res *ServiceDTO, err error)
 	GetServiceByID(ctx context.Context, id string) (res *ServiceDTO, err error)
+	GetServicesByCategoryID(ctx context.Context, id int) (res []ServiceEntity, err error)
 }
 
 type ServicesSearchRepository interface {
