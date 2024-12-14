@@ -12,6 +12,7 @@ var typePathMap = map[int]string{
 	2: "events",
 	3: "rentals",
 	4: "opentrips",
+	5: "trips",
 }
 
 var categoryStringMap = map[int]string{
@@ -36,6 +37,23 @@ var MeasurementUnitRegex = map[int]string{
 	2: "^(0[0-9]|1[0-9]|2[0-3]):(00|15|30|45)$",
 	3: "^(0[0-9]|1[0-9]|2[0-3]):00$",
 	4: "^$",
+}
+
+type ItineraryEntity struct {
+	ServiceID string `bson:"service_id" json:"itinerary"`
+	Items     string `json:"items" bson:"items"`
+}
+
+type ItineraryActivity struct {
+	Start       string `json:"start" bson:"start"`
+	End         string `json:"end" bson:"end"`
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
+}
+
+type ItineraryItem struct {
+	Day      int                 `json:"day" bson:"day"`
+	Activity []ItineraryActivity `json:"activities" bson:"activities"`
 }
 
 type ServiceEntity struct {
